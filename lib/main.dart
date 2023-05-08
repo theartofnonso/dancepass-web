@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:html';
 
 import 'package:dancepassweb/cities.dart';
 import 'package:dancepassweb/form_field_container.dart';
@@ -77,6 +76,8 @@ class _MyHomePageState extends State<MyHomePage> {
   String? _selectedCity;
   final List<String> _selectedCategories = [];
 
+  String? _selectedBannerUrl;
+
   final List<TextEditingController> _genreFormControllers = [TextEditingController()];
   final List<TextEditingController> _lineupFormControllers = [TextEditingController()];
   final List<TextEditingController> _timelineDescriptionControllers = [TextEditingController()];
@@ -129,6 +130,14 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
+  DateTime _getStartDateTime() {
+    return DateTime(_selectedStartDate.year, _selectedStartDate.month, _selectedStartDate.day, _selectedStartTime.hour, _selectedStartTime.minute);
+  }
+
+  DateTime _getEndDateTime() {
+    return DateTime(_selectedEndDate.year, _selectedEndDate.month, _selectedEndDate.day, _selectedEndTime.hour, _selectedEndTime.minute);
+  }
+
   Future<void> _selectTimelinePeriod(int index) async {
     final pickedTime = await showTimePicker(
       context: context,
@@ -142,45 +151,55 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
-  List<Map<String, String>> _getAllTimeline() {
+  List<String> _getAllTimeline() {
+    DateTime now = DateTime.now(); // current date and time
+
     final timelineDescriptions = _timelineDescriptionControllers.map((controller) => controller.text).toList();
-    List<Map<String, String>> timeline = [];
+    List<String> timeline = [];
     for (var i = 0; i < timelineDescriptions.length; i++) {
-      timeline.add({
-        "description": timelineDescriptions[i],
-        "time": _timelineTimes[i].toString()
-      });
+      final dateTime = DateTime(now.year, now.month, now.day, _timelineTimes[i].hour, _timelineTimes[i].minute);
+      timeline.add(jsonEncode({"description": timelineDescriptions[i], "time": dateTime.toIso8601String()}));
     }
     return timeline;
   }
 
+  bool _isDateValid() {
+    final startDateTime = _getStartDateTime();
+    final endDateTime =  _getEndDateTime();
+    return startDateTime.isBefore(endDateTime);
+  }
+
   Future<void> _createEvent() async {
-    if (_formKey.currentState!.validate()) {
-      final payload = {
-        "name": _nameController.text,
-        "description": _descriptionController.text,
-        "category": _selectedCategories.map((category) => category).toList(),
-        "genre": _genreFormControllers.map((controller) => controller.text).toList(),
-        "startDateTime": "2023-05-08T19:30:00.000Z",
-        "endDateTime": "2023-05-09T02:00:00.000Z",
-        "venue": _venueController.text,
-        "city": _selectedCity,
-        "country": "UK",
-        "postcode": _postcodeController.text,
-        "address": _addressController.text,
-        "bannerUrl": "https://d29oxdp3wol7wi.cloudfront.net/public/banners/carribeans_in_london_festival.jpg",
-        "hostName": _hostController.text,
-        "lineup": _lineupFormControllers.map((controller) => controller.text).toList(),
-        "timeline": _getAllTimeline(),
-        "ticketPrice": _ticketPriceController.text,
-        "ticketsUrl": _ticketUrlController.text
-      };
+    if (!_formKey.currentState!.validate()) {
 
-      final json = jsonEncode(payload);
+      if(!_isDateValid()) {
+        final payload = {
+          "name": _nameController.text,
+          "description": _descriptionController.text,
+          "category": _selectedCategories.map((category) => category).toList(),
+          "genre": _genreFormControllers.map((controller) => controller.text).toList(),
+          "startDateTime": "${_getStartDateTime().toIso8601String()}Z",
+          "endDateTime": "${_getEndDateTime().toIso8601String()}Z",
+          "venue": _venueController.text,
+          "city": _selectedCity,
+          "country": "UK",
+          "postcode": _postcodeController.text,
+          "address": _addressController.text,
+          "bannerUrl": _bannerUrlController.text, //"https://d29oxdp3wol7wi.cloudfront.net/public/banners/carribeans_in_london_festival.jpg",
+          "hostName": _hostController.text,
+          "lineup": _lineupFormControllers.map((controller) => controller.text).toList(),
+          "timeline": _getAllTimeline(),
+          "ticketPrice": _ticketPriceController.text,
+          "ticketsUrl": _ticketUrlController.text
+        };
 
-      print(json);
+        final json = jsonEncode(payload);
 
-      print("Event is being created");
+        print(json);
+
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Start date must be before end date")));
+      }
     } else {
       print("Event is not being created");
     }
@@ -625,11 +644,26 @@ class _MyHomePageState extends State<MyHomePage> {
                       const SizedBox(
                         height: 4,
                       ),
-                      CTextFormField(
-                        controller: _bannerUrlController,
-                        width: 400,
-                        type: TextInputType.url,
-                        label: 'Banner',
+                      SizedBox(
+                        width: 600,
+                        child: Row(
+                          children: [
+                            CTextFormField(
+                              controller: _bannerUrlController,
+                              width: 400,
+                              type: TextInputType.url,
+                              label: 'Banner',
+                              onChanged: (value) {
+                                setState(() {
+                                  if (value != null) {
+                                    _selectedBannerUrl = value;
+                                  }
+                                });
+                              },
+                            ),
+                            //_selectedBannerUrl != null ? Image.network(_bannerUrlController.text, fit: BoxFit.contain, repeat: ImageRepeat.noRepeat, scale: 1.0, width: 100, height: 100,) : const SizedBox.shrink(),
+                          ],
+                        ),
                       ),
                     ],
                   ),
