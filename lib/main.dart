@@ -165,43 +165,44 @@ class _MyHomePageState extends State<MyHomePage> {
 
   bool _isDateValid() {
     final startDateTime = _getStartDateTime();
-    final endDateTime =  _getEndDateTime();
+    final endDateTime = _getEndDateTime();
     return startDateTime.isBefore(endDateTime);
   }
 
   Future<void> _createEvent() async {
-    if (!_formKey.currentState!.validate()) {
+    final currentState = _formKey.currentState;
+    if (currentState != null) {
+      if (currentState.validate()) {
+        if (_isDateValid()) {
+          final payload = {
+            "name": _nameController.text,
+            "description": _descriptionController.text,
+            "category": _selectedCategories.map((category) => category).toList(),
+            "genre": _genreFormControllers.map((controller) => controller.text).toList(),
+            "startDateTime": "${_getStartDateTime().toIso8601String()}Z",
+            "endDateTime": "${_getEndDateTime().toIso8601String()}Z",
+            "venue": _venueController.text,
+            "city": _selectedCity,
+            "country": "UK",
+            "postcode": _postcodeController.text,
+            "address": _addressController.text,
+            "bannerUrl": _bannerUrlController.text, //"https://d29oxdp3wol7wi.cloudfront.net/public/banners/carribeans_in_london_festival.jpg",
+            "hostName": _hostController.text,
+            "lineup": _lineupFormControllers.map((controller) => controller.text).toList(),
+            "timeline": _getAllTimeline(),
+            "ticketPrice": _ticketPriceController.text,
+            "ticketsUrl": _ticketUrlController.text
+          };
 
-      if(!_isDateValid()) {
-        final payload = {
-          "name": _nameController.text,
-          "description": _descriptionController.text,
-          "category": _selectedCategories.map((category) => category).toList(),
-          "genre": _genreFormControllers.map((controller) => controller.text).toList(),
-          "startDateTime": "${_getStartDateTime().toIso8601String()}Z",
-          "endDateTime": "${_getEndDateTime().toIso8601String()}Z",
-          "venue": _venueController.text,
-          "city": _selectedCity,
-          "country": "UK",
-          "postcode": _postcodeController.text,
-          "address": _addressController.text,
-          "bannerUrl": _bannerUrlController.text, //"https://d29oxdp3wol7wi.cloudfront.net/public/banners/carribeans_in_london_festival.jpg",
-          "hostName": _hostController.text,
-          "lineup": _lineupFormControllers.map((controller) => controller.text).toList(),
-          "timeline": _getAllTimeline(),
-          "ticketPrice": _ticketPriceController.text,
-          "ticketsUrl": _ticketUrlController.text
-        };
+          final json = jsonEncode(payload);
 
-        final json = jsonEncode(payload);
-
-        print(json);
-
+          print(json);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Start date must be before end date")));
+        }
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Start date must be before end date")));
+        print("Event is not being created");
       }
-    } else {
-      print("Event is not being created");
     }
   }
 
