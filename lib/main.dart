@@ -187,7 +187,7 @@ class _MyHomePageState extends State<MyHomePage> {
     if (pickedTime != null) {
       setState(() {
         _timelineTimes[index] = pickedTime;
-        _displayTimelineSummary(index, _timelineDescriptionControllers[index].text, _timelineTimes[index]);
+        _setTimelineSummary(index, _timelineDescriptionControllers[index].text, _timelineTimes[index]);
       });
     }
   }
@@ -271,19 +271,41 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
+  void _removeLineupFormField(int index) {
+    if (_lineupFormControllers.length > 1) {
+      setState(() {
+        _lineupFormControllers.removeAt(index);
+      });
+    }
+  }
+
   void _addTimeline() {
-    _addTimelineFormField();
+    _addTimelineDescriptionFormField();
     _addTimelineTime();
     _timelineSummaries.add("event at 17:30");
   }
 
-  void _addTimelineFormField() {
+  void _removeTimeline(int index) {
+    _removeTimelineDescriptionFormField(index);
+    _removeTimelineTime(index);
+    //_timelineSummaries.remove("event at 17:30");
+  }
+
+  void _addTimelineDescriptionFormField() {
     // Add a new form field when the button is clicked
     // Add a new form field when the button is clicked
     final newController = TextEditingController();
     setState(() {
       _timelineDescriptionControllers.add(newController);
     });
+  }
+
+  void _removeTimelineDescriptionFormField(int index) {
+    if (_timelineDescriptionControllers.length > 1) {
+      setState(() {
+        _timelineDescriptionControllers.removeAt(index);
+      });
+    }
   }
 
   void _addTimelineTime() {
@@ -293,6 +315,14 @@ class _MyHomePageState extends State<MyHomePage> {
     setState(() {
       _timelineTimes.add(newTimeOfDay);
     });
+  }
+
+  void _removeTimelineTime(int index) {
+    if (_timelineTimes.length > 1) {
+      setState(() {
+        _timelineTimes.removeAt(index);
+      });
+    }
   }
 
   String _displayDate({required DateTime rawDateTime, required period}) {
@@ -331,9 +361,12 @@ class _MyHomePageState extends State<MyHomePage> {
     return "$summary ${DateFormat("Hm", "en").format(dateTime)}";
   }
 
-  void _displayTimelineSummary(int index, String description, TimeOfDay rawTimeOfDay) {
+  void _setTimelineSummary(int index, String description, TimeOfDay rawTimeOfDay) {
+
+    final dateTime = DateTime(2021, 1, 1, rawTimeOfDay.hour, rawTimeOfDay.minute);
+
     setState(() {
-      _timelineSummaries[index] = "$description at ";
+      _timelineSummaries[index] = "$description at ${DateFormat("Hm", "en").format(dateTime)}";
     });
   }
 
@@ -495,39 +528,42 @@ class _MyHomePageState extends State<MyHomePage> {
                     ),
                     FormFieldContainer(
                       height: 200,
-                      child: ListView.builder(
-                        itemCount: _genreFormControllers.length,
-                        itemBuilder: (context, index) {
-                          return Column(
-                            children: [
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  GestureDetector(
-                                      onTap: () => _removeGenreFormField(index),
-                                      child: const Icon(
-                                        Icons.remove_circle_outline,
-                                        color: Colors.redAccent,
-                                        size: 18,
-                                      )),
-                                  const SizedBox(
-                                    width: 8,
-                                  ),
-                                  Expanded(
-                                    child: CTextFormField(
-                                      controller: _genreFormControllers[index],
-                                      type: TextInputType.text,
-                                      label: 'Genre field ${index + 1}',
+                      child: ScrollConfiguration(
+                        behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+                        child: ListView.builder(
+                          itemCount: _genreFormControllers.length,
+                          itemBuilder: (context, index) {
+                            return Column(
+                              children: [
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    GestureDetector(
+                                        onTap: () => _removeGenreFormField(index),
+                                        child: const Icon(
+                                          Icons.remove_circle_outline,
+                                          color: Colors.redAccent,
+                                          size: 18,
+                                        )),
+                                    const SizedBox(
+                                      width: 8,
                                     ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(
-                                height: 10,
-                              )
-                            ],
-                          );
-                        },
+                                    Expanded(
+                                      child: CTextFormField(
+                                        controller: _genreFormControllers[index],
+                                        type: TextInputType.text,
+                                        label: 'Genre field ${index + 1}',
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(
+                                  height: 10,
+                                )
+                              ],
+                            );
+                          },
+                        ),
                       ),
                     ),
                     const SizedBox(
@@ -631,119 +667,156 @@ class _MyHomePageState extends State<MyHomePage> {
                     const SizedBox(
                       height: 20,
                     ),
-                    
-                    //
-                    // /// Lineup
-                    // const SizedBox(
-                    //   height: 20,
-                    // ),
-                    // const Text(
-                    //   "Line Up",
-                    //   style: TextStyle(fontSize: 14),
-                    // ),
-                    // const SizedBox(
-                    //   height: 4,
-                    // ),
-                    // Row(
-                    //   mainAxisAlignment: MainAxisAlignment.center,
-                    //   crossAxisAlignment: CrossAxisAlignment.start,
-                    //   children: [
-                    //     Container(
-                    //       color: Colors.grey.shade200,
-                    //       padding: const EdgeInsets.all(8),
-                    //       height: 200,
-                    //       width: 400,
-                    //       child: ListView.builder(
-                    //         itemCount: _lineupFormControllers.length,
-                    //         itemBuilder: (context, index) {
-                    //           return Column(
-                    //             crossAxisAlignment: CrossAxisAlignment.start,
-                    //             children: [
-                    //               CTextFormField(
-                    //                 controller: _lineupFormControllers[index],
-                    //                 width: 400,
-                    //                 type: TextInputType.text,
-                    //                 label: 'Lineup field ${index + 1}',
-                    //               ),
-                    //               const SizedBox(
-                    //                 height: 10,
-                    //               )
-                    //             ],
-                    //           );
-                    //         },
-                    //       ),
-                    //     ),
-                    //     const SizedBox(
-                    //       width: 10,
-                    //     ),
-                    //     GestureDetector(
-                    //         onTap: () => _addLineupFormField(),
-                    //         child: const Icon(
-                    //           Icons.add_box,
-                    //           size: 30,
-                    //         ))
-                    //   ],
-                    // ),
-                    //
-                    // /// Timeline
-                    // const SizedBox(
-                    //   height: 20,
-                    // ),
-                    // const Text(
-                    //   "Timeline of events",
-                    //   style: TextStyle(fontSize: 14),
-                    // ),
-                    // const SizedBox(
-                    //   height: 4,
-                    // ),
-                    // Row(
-                    //   mainAxisAlignment: MainAxisAlignment.center,
-                    //   crossAxisAlignment: CrossAxisAlignment.start,
-                    //   children: [
-                    //     Container(
-                    //       color: Colors.grey.shade200,
-                    //       padding: const EdgeInsets.only(top: 8, right: 8, bottom: 8),
-                    //       height: 200,
-                    //       width: 400,
-                    //       child: ListView.builder(
-                    //         itemCount: _timelineDescriptionControllers.length,
-                    //         itemBuilder: (context, index) {
-                    //           return ListTile(
-                    //             title: CTextFormField(
-                    //               controller: _timelineDescriptionControllers[index],
-                    //               width: 400,
-                    //               type: TextInputType.text,
-                    //               onChanged: (value) {
-                    //                 _displayTimelineSummary(index, _timelineDescriptionControllers[index].text, _timelineTimes[index]);
-                    //               },
-                    //               label: 'Timeline field ${index + 1}',
-                    //             ),
-                    //             subtitle: Padding(
-                    //               padding: const EdgeInsets.all(8.0),
-                    //               child: Text(_timelineSummaries[index]),
-                    //             ),
-                    //             trailing: IconButton(
-                    //               icon: const Icon(Icons.access_time),
-                    //               onPressed: () => _selectTimelinePeriod(index),
-                    //             ),
-                    //           );
-                    //         },
-                    //       ),
-                    //     ),
-                    //     const SizedBox(
-                    //       width: 10,
-                    //     ),
-                    //     GestureDetector(
-                    //         onTap: () => _addTimeline(),
-                    //         child: const Icon(
-                    //           Icons.add_box,
-                    //           size: 30,
-                    //         ))
-                    //   ],
-                    // ),
-                    // const SizedBox(
-                    //   height: 20,
-                    // ),
+
+                    /// Line up
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          "Lineup of artists",
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(
+                          width: 10,
+                        ),
+                        GestureDetector(
+                            onTap: () => _addLineupFormField(),
+                            child: const Icon(
+                              Icons.add_box,
+                              size: 30,
+                            )),
+                      ],
+                    ),
+                    const SizedBox(
+                      height: 4,
+                    ),
+                    FormFieldContainer(
+                      height: 200,
+                      child: ScrollConfiguration(
+                        behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+                        child: ListView.builder(
+                          itemCount: _lineupFormControllers.length,
+                          itemBuilder: (context, index) {
+                            return Column(
+                              children: [
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    GestureDetector(
+                                        onTap: () => _removeLineupFormField(index),
+                                        child: const Icon(
+                                          Icons.remove_circle_outline,
+                                          color: Colors.redAccent,
+                                          size: 18,
+                                        )),
+                                    const SizedBox(
+                                      width: 8,
+                                    ),
+                                    Expanded(
+                                      child: CTextFormField(
+                                        controller: _lineupFormControllers[index],
+                                        type: TextInputType.text,
+                                        label: 'Lineup field ${index + 1}',
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(
+                                  height: 10,
+                                )
+                              ],
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                    const SizedBox(
+                      height: 20,
+                    ),
+
+                    /// Timeline
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          "Event Timeline",
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(
+                          width: 10,
+                        ),
+                        GestureDetector(
+                            onTap: () => _addTimeline(),
+                            child: const Icon(
+                              Icons.add_box,
+                              size: 30,
+                            )),
+                      ],
+                    ),
+                    const SizedBox(
+                      height: 4,
+                    ),
+                    FormFieldContainer(
+                      height: 300,
+                      child: ScrollConfiguration(
+                        behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+                        child: ListView.builder(
+                          itemCount: _timelineDescriptionControllers.length,
+                          itemBuilder: (context, index) {
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    GestureDetector(
+                                        onTap: () => _removeTimeline(index),
+                                        child: const Icon(
+                                          Icons.remove_circle_outline,
+                                          color: Colors.redAccent,
+                                          size: 18,
+                                        )),
+                                    const SizedBox(
+                                      width: 8,
+                                    ),
+                                    Expanded(
+                                      child: CTextFormField(
+                                        controller: _timelineDescriptionControllers[index],
+                                        type: TextInputType.text,
+                                        label: 'Timeline field ${index + 1}',
+                                        onChanged: (_) {
+                                          _setTimelineSummary(index, _timelineDescriptionControllers[index].text, _timelineTimes[index]);
+                                        },
+                                      ),
+                                    ),
+                                    const SizedBox(
+                                      width: 8,
+                                    ),
+                                    GestureDetector(
+                                        onTap: () => _selectTimelinePeriod(index),
+                                        child: const Icon(
+                                          Icons.access_time_outlined,
+                                          size: 18,
+                                        ))
+                                  ],
+                                ),
+                                const SizedBox(
+                                  height: 10,
+                                ),
+                                Text(_timelineSummaries[index]),
+                                const SizedBox(
+                                  height: 10,
+                                ),
+                              ],
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                    const SizedBox(
+                      height: 20,
+                    ),
+
                     ElevatedButton(
                       onPressed: () => _createEvent(),
                       child: const Text('Create Event'),
