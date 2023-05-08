@@ -321,7 +321,6 @@ class _MyHomePageState extends State<MyHomePage> {
                     controller: _nameController,
                     width: 400,
                     type: TextInputType.name,
-                    onChanged: () {},
                     label: 'Name',
                   ),
                   const SizedBox(
@@ -485,7 +484,6 @@ class _MyHomePageState extends State<MyHomePage> {
                                   controller: _genreFormControllers[index],
                                   width: 400,
                                   type: TextInputType.text,
-                                  onChanged: () {},
                                   label: 'Genre field ${index + 1}',
                                 ),
                                 const SizedBox(
@@ -502,7 +500,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       GestureDetector(
                           onTap: () => _addGenreFormField(),
                           child: const Icon(
-                            Icons.add_circle,
+                            Icons.add_box,
                             size: 30,
                           ))
                     ],
@@ -528,7 +526,6 @@ class _MyHomePageState extends State<MyHomePage> {
                                 controller: _venueController,
                                 width: 200,
                                 type: TextInputType.streetAddress,
-                                onChanged: () {},
                                 label: 'Venue',
                               ),
                             ],
@@ -588,7 +585,6 @@ class _MyHomePageState extends State<MyHomePage> {
                                 controller: _postcodeController,
                                 width: 200,
                                 type: TextInputType.streetAddress,
-                                onChanged: () {},
                                 label: 'Postcode',
                               ),
                             ],
@@ -610,7 +606,6 @@ class _MyHomePageState extends State<MyHomePage> {
                                 controller: _addressController,
                                 width: 200,
                                 type: TextInputType.streetAddress,
-                                onChanged: () {},
                                 label: 'Address',
                               ),
                             ],
@@ -634,7 +629,6 @@ class _MyHomePageState extends State<MyHomePage> {
                         controller: _bannerUrlController,
                         width: 400,
                         type: TextInputType.url,
-                        onChanged: () {},
                         label: 'Banner',
                       ),
                     ],
@@ -656,7 +650,6 @@ class _MyHomePageState extends State<MyHomePage> {
                         controller: _hostController,
                         width: 400,
                         type: TextInputType.name,
-                        onChanged: () {},
                         label: 'Host',
                       ),
                     ],
@@ -684,7 +677,6 @@ class _MyHomePageState extends State<MyHomePage> {
                               controller: _ticketPriceController,
                               width: 100,
                               type: TextInputType.number,
-                              onChanged: () {},
                               label: 'Ticket Price',
                             ),
                           ],
@@ -706,7 +698,6 @@ class _MyHomePageState extends State<MyHomePage> {
                               controller: _ticketUrlController,
                               width: 200,
                               type: TextInputType.url,
-                              onChanged: () {},
                               label: 'Ticket Url',
                             ),
                           ],
@@ -745,7 +736,6 @@ class _MyHomePageState extends State<MyHomePage> {
                                   controller: _lineupFormControllers[index],
                                   width: 400,
                                   type: TextInputType.text,
-                                  onChanged: () {},
                                   label: 'Lineup field ${index + 1}',
                                 ),
                                 const SizedBox(
@@ -762,7 +752,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       GestureDetector(
                           onTap: () => _addLineupFormField(),
                           child: const Icon(
-                            Icons.add_circle,
+                            Icons.add_box,
                             size: 30,
                           ))
                     ],
@@ -819,7 +809,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       GestureDetector(
                           onTap: () => _addTimeline(),
                           child: const Icon(
-                            Icons.add_circle,
+                            Icons.add_box,
                             size: 30,
                           ))
                     ],

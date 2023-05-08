@@ -6,9 +6,9 @@ class CTextFormField extends StatelessWidget {
   final TextEditingController controller;
   final TextInputType type;
   final double width;
-  final Function onChanged;
+  final Function? onChanged;
 
-  const CTextFormField({Key? key, required this.controller, required this.width, required this.type, required this.onChanged, required this.label}) : super(key: key);
+  const CTextFormField({Key? key, required this.controller, required this.width, required this.type, this.onChanged, required this.label}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -20,7 +20,7 @@ class CTextFormField extends StatelessWidget {
         decoration: InputDecoration(
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(3)),
         ),
-        onChanged: (value) => onChanged(value),
+        onChanged: (value) => onChanged != null ? onChanged!(value) : null,
         validator: (value) {
           if (value == null || value.isEmpty) {
             return '$label has not been provided';
