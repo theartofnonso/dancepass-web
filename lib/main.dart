@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:dancepassweb/cities.dart';
+import 'package:dancepassweb/datetime_container.dart';
 import 'package:dancepassweb/form_field_container.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart' as date_formatter;
@@ -36,7 +37,26 @@ class MyApp extends StatelessWidget {
           // Notice that the counter didn't reset back to zero; the application
           // is not restarted.
           primarySwatch: Colors.blue,
-          inputDecorationTheme: const InputDecorationTheme()),
+          inputDecorationTheme: InputDecorationTheme(
+            enabledBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: Colors.grey.shade300, width: 1.5),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            filled: true,
+            fillColor: Colors.white,
+            hintStyle: const TextStyle(color: Colors.grey),
+            // Set the focused border color to blue
+            focusedBorder: OutlineInputBorder(
+              borderSide: const BorderSide(color: Colors.black),
+              borderRadius: BorderRadius.circular(5),
+            ),
+            // Set the font family, weight, and size
+            labelStyle: const TextStyle(
+              fontFamily: 'Inter',
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+            ),
+          )),
       home: const MyHomePage(title: 'Welcome Dancepass Web'),
     );
   }
@@ -62,6 +82,9 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   final _formKey = GlobalKey<FormState>();
+
+  static const start = "START";
+  static const end = "END";
 
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
@@ -246,18 +269,45 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  String _displayDate(DateTime rawDateTime) {
-    return DateFormat("EE dd MMM", "en").format(rawDateTime);
+  String _displayDate({required DateTime rawDateTime, required period}) {
+    String summary;
+
+    switch (period) {
+      case start:
+        summary = "Starting on";
+        break;
+      case end:
+        summary = "Ending on";
+        break;
+      default:
+        throw Exception("Invalid date period");
+    }
+
+    return "$summary ${DateFormat("EE dd MMM", "en").format(rawDateTime)}";
   }
 
-  String _displayTime(TimeOfDay rawTimeOfDay) {
+  String _displayTime({required TimeOfDay rawTimeOfDay, required period}) {
+    String summary;
+
+    switch (period) {
+      case start:
+        summary = "Starting at";
+        break;
+      case end:
+        summary = "Ending at";
+        break;
+      default:
+        throw Exception("Invalid date period");
+    }
+
     final dateTime = DateTime(2021, 1, 1, rawTimeOfDay.hour, rawTimeOfDay.minute);
-    return DateFormat("Hm", "en").format(dateTime);
+
+    return "$summary ${DateFormat("Hm", "en").format(dateTime)}";
   }
 
   void _displayTimelineSummary(int index, String description, TimeOfDay rawTimeOfDay) {
     setState(() {
-      _timelineSummaries[index] = "$description at ${_displayTime(rawTimeOfDay)}";
+      _timelineSummaries[index] = "$description at ";
     });
   }
 
@@ -317,48 +367,35 @@ class _MyHomePageState extends State<MyHomePage> {
     // fast, so that you can just rebuild anything that needs updating rather
     // than having to individually change instances of widgets.
     return Scaffold(
+        backgroundColor: Colors.grey.shade50,
         appBar: AppBar(
           // Here we take the value from the MyHomePage object that was created by
           // the App.build method, and use it to set our appbar title.
           title: Text(widget.title),
         ),
-        body: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  const Text(
-                    "Name",
-                    style: TextStyle(fontSize: 14),
-                  ),
-                  const SizedBox(
-                    height: 4,
-                  ),
-                  CTextFormField(
-                    controller: _nameController,
-                    width: 400,
-                    type: TextInputType.name,
-                    label: 'Name',
-                  ),
-                  const SizedBox(
-                    height: 20,
-                  ),
-                  const Text(
-                    "Description",
-                    style: TextStyle(fontSize: 14),
-                  ),
-                  const SizedBox(
-                    height: 4,
-                  ),
-                  SizedBox(
-                    width: 400,
-                    child: TextFormField(
+        body: Center(
+          child: SingleChildScrollView(
+            child: Container(
+              width: 700,
+              padding: const EdgeInsets.all(20.0),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: <Widget>[
+                    CTextFormField(
+                      controller: _nameController,
+                      type: TextInputType.name,
+                      label: 'Name',
+                    ),
+                    const SizedBox(
+                      height: 15,
+                    ),
+
+                    TextFormField(
                       controller: _descriptionController,
                       maxLines: 10,
-                      decoration: const InputDecoration(border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(3)))),
+                      decoration: const InputDecoration(hintText: "Description", border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(3)))),
                       onChanged: (value) {},
                       validator: (value) {
                         if (value == null || value.isEmpty) {
@@ -367,496 +404,403 @@ class _MyHomePageState extends State<MyHomePage> {
                         return null;
                       },
                     ),
-                  ),
-                  const SizedBox(
-                    height: 20,
-                  ),
-                  FormFieldContainer(
-                      width: 400,
-                      child: Row(
-                        children: [
-                          ElevatedButton(
-                            onPressed: () => _selectDate(date: _selectedStartDate, period: "START"),
-                            child: const Text('Select start date'),
-                          ),
-                          const SizedBox(
-                            width: 20,
-                          ),
-                          Text(
-                            _displayDate(_selectedStartDate),
-                            style: const TextStyle(fontWeight: FontWeight.bold),
-                          )
-                        ],
-                      )),
-                  const SizedBox(
-                    height: 20,
-                  ),
-                  FormFieldContainer(
-                      width: 400,
-                      child: Row(
-                        children: [
-                          ElevatedButton(
-                            onPressed: () => _selectTime(timeOfDay: _selectedStartTime, period: "START"),
-                            child: const Text('Select start time'),
-                          ),
-                          const SizedBox(
-                            width: 20,
-                          ),
-                          Text(_displayTime(_selectedStartTime), style: const TextStyle(fontWeight: FontWeight.bold))
-                        ],
-                      )),
-                  const SizedBox(
-                    height: 20,
-                  ),
-                  FormFieldContainer(
-                      width: 400,
-                      child: Row(
-                        children: [
-                          ElevatedButton(
-                            onPressed: () => _selectDate(date: _selectedEndDate, period: "END"),
-                            child: const Text('Select end date'),
-                          ),
-                          const SizedBox(
-                            width: 20,
-                          ),
-                          Text(_displayDate(_selectedEndDate), style: const TextStyle(fontWeight: FontWeight.bold))
-                        ],
-                      )),
-                  const SizedBox(
-                    height: 20,
-                  ),
-                  FormFieldContainer(
-                      width: 400,
-                      child: Row(
-                        children: [
-                          ElevatedButton(
-                            onPressed: () => _selectTime(timeOfDay: _selectedEndTime, period: "END"),
-                            child: const Text('Select end time'),
-                          ),
-                          const SizedBox(
-                            width: 20,
-                          ),
-                          Text(_displayTime(_selectedEndTime), style: const TextStyle(fontWeight: FontWeight.bold))
-                        ],
-                      )),
-                  const SizedBox(
-                    height: 20,
-                  ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text("Category"),
-                      const SizedBox(
-                        height: 4,
-                      ),
-                      SizedBox(
-                        width: 250,
-                        child: DropdownButtonFormField(
-                          items: _eventCategoriesToDropdown(),
-                          onChanged: (value) {
-                            setState(() {
-                              if (value != null) {
-                                _selectedCategories.add(value);
-                              }
-                            });
-                          },
-                          validator: (value) {
-                            if (_selectedCategories.isEmpty) {
-                              return 'Category has not been provided';
-                            }
-                            return null;
-                          },
-                        ),
-                      )
-                    ],
-                  ),
-                  const SizedBox(
-                    height: 20,
-                  ),
-
-                  /// Genre
-                  const SizedBox(
-                    height: 20,
-                  ),
-                  const Text(
-                    "Genre",
-                    style: TextStyle(fontSize: 14),
-                  ),
-                  const SizedBox(
-                    height: 4,
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        color: Colors.grey.shade200,
-                        padding: const EdgeInsets.all(8),
-                        height: 200,
-                        width: 400,
-                        child: ListView.builder(
-                          itemCount: _genreFormControllers.length,
-                          itemBuilder: (context, index) {
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                CTextFormField(
-                                  controller: _genreFormControllers[index],
-                                  width: 400,
-                                  type: TextInputType.text,
-                                  label: 'Genre field ${index + 1}',
-                                ),
-                                const SizedBox(
-                                  height: 10,
-                                )
-                              ],
-                            );
-                          },
-                        ),
-                      ),
-                      const SizedBox(
-                        width: 10,
-                      ),
-                      GestureDetector(
-                          onTap: () => _addGenreFormField(),
-                          child: const Icon(
-                            Icons.add_box,
-                            size: 30,
-                          ))
-                    ],
-                  ),
-                  const SizedBox(
-                    height: 20,
-                  ),
-                  FormFieldContainer(
-                      width: 500,
-                      child: Row(
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                "Venue",
-                                style: TextStyle(fontSize: 14),
-                              ),
-                              const SizedBox(
-                                height: 4,
-                              ),
-                              CTextFormField(
-                                controller: _venueController,
-                                width: 200,
-                                type: TextInputType.streetAddress,
-                                label: 'Venue',
-                              ),
-                            ],
-                          ),
-                          const SizedBox(
-                            width: 10,
-                          ),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                "City",
-                                style: TextStyle(fontSize: 14),
-                              ),
-                              const SizedBox(
-                                height: 4,
-                              ),
-                              SizedBox(
-                                width: 250,
-                                child: DropdownButtonFormField(
-                                  items: _citiesToDropdown(),
-                                  onChanged: (value) {
-                                    setState(() {
-                                      _selectedCity = value;
-                                    });
-                                  },
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return 'City has not been provided';
-                                    }
-                                    return null;
-                                  },
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      )),
-                  const SizedBox(
-                    height: 20,
-                  ),
-                  FormFieldContainer(
-                      width: 500,
-                      child: Row(
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                "Postcode",
-                                style: TextStyle(fontSize: 14),
-                              ),
-                              const SizedBox(
-                                height: 4,
-                              ),
-                              CTextFormField(
-                                controller: _postcodeController,
-                                width: 200,
-                                type: TextInputType.streetAddress,
-                                label: 'Postcode',
-                              ),
-                            ],
-                          ),
-                          const SizedBox(
-                            width: 10,
-                          ),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                "Address",
-                                style: TextStyle(fontSize: 14),
-                              ),
-                              const SizedBox(
-                                height: 4,
-                              ),
-                              CTextFormField(
-                                controller: _addressController,
-                                width: 200,
-                                type: TextInputType.streetAddress,
-                                label: 'Address',
-                              ),
-                            ],
-                          ),
-                        ],
-                      )),
-                  const SizedBox(
-                    height: 20,
-                  ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        "Banner",
-                        style: TextStyle(fontSize: 14),
-                      ),
-                      const SizedBox(
-                        height: 4,
-                      ),
-                      SizedBox(
-                        width: 600,
-                        child: Row(
-                          children: [
-                            CTextFormField(
-                              controller: _bannerUrlController,
-                              width: 400,
-                              type: TextInputType.url,
-                              label: 'Banner',
-                              onChanged: (value) {
-                                setState(() {
-                                  if (value != null) {
-                                    _selectedBannerUrl = value;
-                                  }
-                                });
-                              },
-                            ),
-                            //_selectedBannerUrl != null ? Image.network(_bannerUrlController.text, fit: BoxFit.contain, repeat: ImageRepeat.noRepeat, scale: 1.0, width: 100, height: 100,) : const SizedBox.shrink(),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(
-                    height: 20,
-                  ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        "Host",
-                        style: TextStyle(fontSize: 14),
-                      ),
-                      const SizedBox(
-                        height: 4,
-                      ),
-                      CTextFormField(
-                        controller: _hostController,
-                        width: 400,
-                        type: TextInputType.name,
-                        label: 'Host',
-                      ),
-                    ],
-                  ),
-                  const SizedBox(
-                    height: 20,
-                  ),
-                  Container(
-                    color: Colors.grey.shade200,
-                    padding: const EdgeInsets.all(8),
-                    width: 400,
-                    child: Row(
+                    const SizedBox(
+                      height: 15,
+                    ),
+                    Column(
                       children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        Row(
                           children: [
-                            const Text(
-                              "Ticket Price",
-                              style: TextStyle(fontSize: 14),
+                            DateAndTime(onSelect: () => _selectDate(date: _selectedStartDate, period: start), label: _displayDate(rawDateTime: _selectedStartDate, period: start)),
+                            const Padding(
+                              padding: EdgeInsets.all(8.0),
+                              child: Icon(
+                                Icons.arrow_circle_right_outlined,
+                                size: 18,
+                              ),
                             ),
-                            const SizedBox(
-                              height: 4,
-                            ),
-                            CTextFormField(
-                              controller: _ticketPriceController,
-                              width: 100,
-                              type: TextInputType.number,
-                              label: 'Ticket Price',
-                            ),
+                            DateAndTime(onSelect: () => _selectDate(date: _selectedEndDate, period: end), label: _displayDate(rawDateTime: _selectedEndDate, period: end)),
                           ],
                         ),
-                        const SizedBox(
-                          width: 10,
-                        ),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        const SizedBox(height: 10,),
+                        Row(
                           children: [
-                            const Text(
-                              "Ticket Url",
-                              style: TextStyle(fontSize: 14),
+                            DateAndTime(onSelect: () => _selectTime(timeOfDay: _selectedStartTime, period: end), label: _displayTime(rawTimeOfDay: _selectedStartTime, period: start)),
+                            const Padding(
+                              padding: EdgeInsets.all(8.0),
+                              child: Icon(
+                                Icons.arrow_circle_right_outlined,
+                                size: 18,
+                              ),
                             ),
-                            const SizedBox(
-                              height: 4,
-                            ),
-                            CTextFormField(
-                              controller: _ticketUrlController,
-                              width: 200,
-                              type: TextInputType.url,
-                              label: 'Ticket Url',
-                            ),
+                            DateAndTime(onSelect: () => _selectTime(timeOfDay: _selectedEndTime, period: end), label: _displayTime(rawTimeOfDay: _selectedEndTime, period: end)),
                           ],
-                        ),
+                        )
                       ],
                     ),
-                  ),
-
-                  /// Lineup
-                  const SizedBox(
-                    height: 20,
-                  ),
-                  const Text(
-                    "Line Up",
-                    style: TextStyle(fontSize: 14),
-                  ),
-                  const SizedBox(
-                    height: 4,
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        color: Colors.grey.shade200,
-                        padding: const EdgeInsets.all(8),
-                        height: 200,
-                        width: 400,
-                        child: ListView.builder(
-                          itemCount: _lineupFormControllers.length,
-                          itemBuilder: (context, index) {
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                CTextFormField(
-                                  controller: _lineupFormControllers[index],
-                                  width: 400,
-                                  type: TextInputType.text,
-                                  label: 'Lineup field ${index + 1}',
-                                ),
-                                const SizedBox(
-                                  height: 10,
-                                )
-                              ],
-                            );
-                          },
-                        ),
-                      ),
-                      const SizedBox(
-                        width: 10,
-                      ),
-                      GestureDetector(
-                          onTap: () => _addLineupFormField(),
-                          child: const Icon(
-                            Icons.add_box,
-                            size: 30,
-                          ))
-                    ],
-                  ),
-
-                  /// Timeline
-                  const SizedBox(
-                    height: 20,
-                  ),
-                  const Text(
-                    "Timeline of events",
-                    style: TextStyle(fontSize: 14),
-                  ),
-                  const SizedBox(
-                    height: 4,
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        color: Colors.grey.shade200,
-                        padding: const EdgeInsets.only(top: 8, right: 8, bottom: 8),
-                        height: 200,
-                        width: 400,
-                        child: ListView.builder(
-                          itemCount: _timelineDescriptionControllers.length,
-                          itemBuilder: (context, index) {
-                            return ListTile(
-                              title: CTextFormField(
-                                controller: _timelineDescriptionControllers[index],
-                                width: 400,
-                                type: TextInputType.text,
-                                onChanged: (value) {
-                                  _displayTimelineSummary(index, _timelineDescriptionControllers[index].text, _timelineTimes[index]);
-                                },
-                                label: 'Timeline field ${index + 1}',
-                              ),
-                              subtitle: Padding(
-                                padding: const EdgeInsets.all(8.0),
-                                child: Text(_timelineSummaries[index]),
-                              ),
-                              trailing: IconButton(
-                                icon: const Icon(Icons.access_time),
-                                onPressed: () => _selectTimelinePeriod(index),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                      const SizedBox(
-                        width: 10,
-                      ),
-                      GestureDetector(
-                          onTap: () => _addTimeline(),
-                          child: const Icon(
-                            Icons.add_box,
-                            size: 30,
-                          ))
-                    ],
-                  ),
-                  const SizedBox(
-                    height: 20,
-                  ),
-                  ElevatedButton(
-                    onPressed: () => _createEvent(),
-                    child: const Text('Create Event'),
-                  )
-                ],
+                    const SizedBox(
+                      height: 20,
+                    ),
+                    // Column(
+                    //   crossAxisAlignment: CrossAxisAlignment.start,
+                    //   children: [
+                    //     const Text("Category"),
+                    //     const SizedBox(
+                    //       height: 4,
+                    //     ),
+                    //     SizedBox(
+                    //       width: 250,
+                    //       child: DropdownButtonFormField(
+                    //         items: _eventCategoriesToDropdown(),
+                    //         onChanged: (value) {
+                    //           setState(() {
+                    //             if (value != null) {
+                    //               _selectedCategories.add(value);
+                    //             }
+                    //           });
+                    //         },
+                    //         validator: (value) {
+                    //           if (_selectedCategories.isEmpty) {
+                    //             return 'Category has not been provided';
+                    //           }
+                    //           return null;
+                    //         },
+                    //       ),
+                    //     )
+                    //   ],
+                    // ),
+                    // const SizedBox(
+                    //   height: 20,
+                    // ),
+                    //
+                    // /// Genre
+                    // const SizedBox(
+                    //   height: 20,
+                    // ),
+                    // const Text(
+                    //   "Genre",
+                    //   style: TextStyle(fontSize: 14),
+                    // ),
+                    // const SizedBox(
+                    //   height: 4,
+                    // ),
+                    // Row(
+                    //   mainAxisAlignment: MainAxisAlignment.center,
+                    //   crossAxisAlignment: CrossAxisAlignment.start,
+                    //   children: [
+                    //     Container(
+                    //       color: Colors.grey.shade200,
+                    //       padding: const EdgeInsets.all(8),
+                    //       height: 200,
+                    //       width: 400,
+                    //       child: ListView.builder(
+                    //         itemCount: _genreFormControllers.length,
+                    //         itemBuilder: (context, index) {
+                    //           return Column(
+                    //             crossAxisAlignment: CrossAxisAlignment.start,
+                    //             children: [
+                    //               CTextFormField(
+                    //                 controller: _genreFormControllers[index],
+                    //                 width: 400,
+                    //                 type: TextInputType.text,
+                    //                 label: 'Genre field ${index + 1}',
+                    //               ),
+                    //               const SizedBox(
+                    //                 height: 10,
+                    //               )
+                    //             ],
+                    //           );
+                    //         },
+                    //       ),
+                    //     ),
+                    //     const SizedBox(
+                    //       width: 10,
+                    //     ),
+                    //     GestureDetector(
+                    //         onTap: () => _addGenreFormField(),
+                    //         child: const Icon(
+                    //           Icons.add_box,
+                    //           size: 30,
+                    //         ))
+                    //   ],
+                    // ),
+                    // const SizedBox(
+                    //   height: 20,
+                    // ),
+                    // FormFieldContainer(
+                    //     width: 500,
+                    //     child: Row(
+                    //       children: [
+                    //         Column(
+                    //           crossAxisAlignment: CrossAxisAlignment.start,
+                    //           children: [
+                    //             CTextFormField(
+                    //               controller: _venueController,
+                    //               width: 200,
+                    //               type: TextInputType.streetAddress,
+                    //               label: 'Venue',
+                    //             ),
+                    //           ],
+                    //         ),
+                    //         const SizedBox(
+                    //           width: 10,
+                    //         ),
+                    //         Column(
+                    //           crossAxisAlignment: CrossAxisAlignment.start,
+                    //           children: [
+                    //             SizedBox(
+                    //               width: 250,
+                    //               child: DropdownButtonFormField(
+                    //                 items: _citiesToDropdown(),
+                    //                 onChanged: (value) {
+                    //                   setState(() {
+                    //                     _selectedCity = value;
+                    //                   });
+                    //                 },
+                    //                 validator: (value) {
+                    //                   if (value == null || value.isEmpty) {
+                    //                     return 'City has not been provided';
+                    //                   }
+                    //                   return null;
+                    //                 },
+                    //               ),
+                    //             ),
+                    //           ],
+                    //         ),
+                    //       ],
+                    //     )),
+                    // const SizedBox(
+                    //   height: 20,
+                    // ),
+                    // FormFieldContainer(
+                    //     width: 500,
+                    //     child: Row(
+                    //       children: [
+                    //         Column(
+                    //           crossAxisAlignment: CrossAxisAlignment.start,
+                    //           children: [
+                    //             CTextFormField(
+                    //               controller: _postcodeController,
+                    //               width: 200,
+                    //               type: TextInputType.streetAddress,
+                    //               label: 'Postcode',
+                    //             ),
+                    //           ],
+                    //         ),
+                    //         const SizedBox(
+                    //           width: 10,
+                    //         ),
+                    //         Column(
+                    //           crossAxisAlignment: CrossAxisAlignment.start,
+                    //           children: [
+                    //             CTextFormField(
+                    //               controller: _addressController,
+                    //               width: 200,
+                    //               type: TextInputType.streetAddress,
+                    //               label: 'Address',
+                    //             ),
+                    //           ],
+                    //         ),
+                    //       ],
+                    //     )),
+                    // const SizedBox(
+                    //   height: 20,
+                    // ),
+                    // Column(
+                    //   crossAxisAlignment: CrossAxisAlignment.start,
+                    //   children: [
+                    //     SizedBox(
+                    //       width: 600,
+                    //       child: Row(
+                    //         children: [
+                    //           CTextFormField(
+                    //             controller: _bannerUrlController,
+                    //             width: 400,
+                    //             type: TextInputType.url,
+                    //             label: 'Banner',
+                    //             onChanged: (value) {
+                    //               setState(() {
+                    //                 if (value != null) {
+                    //                   _selectedBannerUrl = value;
+                    //                 }
+                    //               });
+                    //             },
+                    //           ),
+                    //           //_selectedBannerUrl != null ? Image.network(_bannerUrlController.text, fit: BoxFit.contain, repeat: ImageRepeat.noRepeat, scale: 1.0, width: 100, height: 100,) : const SizedBox.shrink(),
+                    //         ],
+                    //       ),
+                    //     ),
+                    //   ],
+                    // ),
+                    // const SizedBox(
+                    //   height: 20,
+                    // ),
+                    // Column(
+                    //   crossAxisAlignment: CrossAxisAlignment.start,
+                    //   children: [
+                    //     CTextFormField(
+                    //       controller: _hostController,
+                    //       width: 400,
+                    //       type: TextInputType.name,
+                    //       label: 'Host',
+                    //     ),
+                    //   ],
+                    // ),
+                    // const SizedBox(
+                    //   height: 20,
+                    // ),
+                    // Container(
+                    //   color: Colors.grey.shade200,
+                    //   padding: const EdgeInsets.all(8),
+                    //   width: 400,
+                    //   child: Row(
+                    //     children: [
+                    //       Column(
+                    //         crossAxisAlignment: CrossAxisAlignment.start,
+                    //         children: [
+                    //           CTextFormField(
+                    //             controller: _ticketPriceController,
+                    //             width: 100,
+                    //             type: TextInputType.number,
+                    //             label: 'Ticket Price',
+                    //           ),
+                    //         ],
+                    //       ),
+                    //       const SizedBox(
+                    //         width: 10,
+                    //       ),
+                    //       Column(
+                    //         crossAxisAlignment: CrossAxisAlignment.start,
+                    //         children: [
+                    //           CTextFormField(
+                    //             controller: _ticketUrlController,
+                    //             width: 200,
+                    //             type: TextInputType.url,
+                    //             label: 'Ticket Url',
+                    //           ),
+                    //         ],
+                    //       ),
+                    //     ],
+                    //   ),
+                    // ),
+                    //
+                    // /// Lineup
+                    // const SizedBox(
+                    //   height: 20,
+                    // ),
+                    // const Text(
+                    //   "Line Up",
+                    //   style: TextStyle(fontSize: 14),
+                    // ),
+                    // const SizedBox(
+                    //   height: 4,
+                    // ),
+                    // Row(
+                    //   mainAxisAlignment: MainAxisAlignment.center,
+                    //   crossAxisAlignment: CrossAxisAlignment.start,
+                    //   children: [
+                    //     Container(
+                    //       color: Colors.grey.shade200,
+                    //       padding: const EdgeInsets.all(8),
+                    //       height: 200,
+                    //       width: 400,
+                    //       child: ListView.builder(
+                    //         itemCount: _lineupFormControllers.length,
+                    //         itemBuilder: (context, index) {
+                    //           return Column(
+                    //             crossAxisAlignment: CrossAxisAlignment.start,
+                    //             children: [
+                    //               CTextFormField(
+                    //                 controller: _lineupFormControllers[index],
+                    //                 width: 400,
+                    //                 type: TextInputType.text,
+                    //                 label: 'Lineup field ${index + 1}',
+                    //               ),
+                    //               const SizedBox(
+                    //                 height: 10,
+                    //               )
+                    //             ],
+                    //           );
+                    //         },
+                    //       ),
+                    //     ),
+                    //     const SizedBox(
+                    //       width: 10,
+                    //     ),
+                    //     GestureDetector(
+                    //         onTap: () => _addLineupFormField(),
+                    //         child: const Icon(
+                    //           Icons.add_box,
+                    //           size: 30,
+                    //         ))
+                    //   ],
+                    // ),
+                    //
+                    // /// Timeline
+                    // const SizedBox(
+                    //   height: 20,
+                    // ),
+                    // const Text(
+                    //   "Timeline of events",
+                    //   style: TextStyle(fontSize: 14),
+                    // ),
+                    // const SizedBox(
+                    //   height: 4,
+                    // ),
+                    // Row(
+                    //   mainAxisAlignment: MainAxisAlignment.center,
+                    //   crossAxisAlignment: CrossAxisAlignment.start,
+                    //   children: [
+                    //     Container(
+                    //       color: Colors.grey.shade200,
+                    //       padding: const EdgeInsets.only(top: 8, right: 8, bottom: 8),
+                    //       height: 200,
+                    //       width: 400,
+                    //       child: ListView.builder(
+                    //         itemCount: _timelineDescriptionControllers.length,
+                    //         itemBuilder: (context, index) {
+                    //           return ListTile(
+                    //             title: CTextFormField(
+                    //               controller: _timelineDescriptionControllers[index],
+                    //               width: 400,
+                    //               type: TextInputType.text,
+                    //               onChanged: (value) {
+                    //                 _displayTimelineSummary(index, _timelineDescriptionControllers[index].text, _timelineTimes[index]);
+                    //               },
+                    //               label: 'Timeline field ${index + 1}',
+                    //             ),
+                    //             subtitle: Padding(
+                    //               padding: const EdgeInsets.all(8.0),
+                    //               child: Text(_timelineSummaries[index]),
+                    //             ),
+                    //             trailing: IconButton(
+                    //               icon: const Icon(Icons.access_time),
+                    //               onPressed: () => _selectTimelinePeriod(index),
+                    //             ),
+                    //           );
+                    //         },
+                    //       ),
+                    //     ),
+                    //     const SizedBox(
+                    //       width: 10,
+                    //     ),
+                    //     GestureDetector(
+                    //         onTap: () => _addTimeline(),
+                    //         child: const Icon(
+                    //           Icons.add_box,
+                    //           size: 30,
+                    //         ))
+                    //   ],
+                    // ),
+                    // const SizedBox(
+                    //   height: 20,
+                    // ),
+                    ElevatedButton(
+                      onPressed: () => _createEvent(),
+                      child: const Text('Create Event'),
+                    )
+                  ],
+                ),
               ),
             ),
           ),

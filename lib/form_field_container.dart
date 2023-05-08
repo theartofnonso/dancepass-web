@@ -4,19 +4,20 @@ class FormFieldContainer extends StatelessWidget {
 
   final Widget child;
 
-  final double width;
-
-  const FormFieldContainer({Key? key, required this.child, required this.width}) : super(key: key);
+  const FormFieldContainer({Key? key, required this.child}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Container(
+      padding: const EdgeInsets.all(16.0),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8.0),
-        color: Colors.grey.shade200,
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12.0),
+        border: Border.all(
+          color: Colors.grey.shade100,
+          width: 2.0,
+        ),
       ),
-      padding: const EdgeInsets.all(8),
-      width: width,
       child: child,
     );
   }
