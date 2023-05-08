@@ -38,6 +38,9 @@ class MyApp extends StatelessWidget {
           // is not restarted.
           useMaterial3: true,
           primarySwatch: Colors.blue,
+          textButtonTheme: const TextButtonThemeData(
+            style: ButtonStyle()
+          ),
           chipTheme: ChipThemeData(
             secondarySelectedColor: Colors.black,
             secondaryLabelStyle: const TextStyle(color: Colors.white),
@@ -115,7 +118,7 @@ class _MyHomePageState extends State<MyHomePage> {
   final TextEditingController _ticketUrlController = TextEditingController();
 
   String _selectedCity = CitiesInUK.cities.first;
-  final List<String> _selectedCategories = [];
+  final List<String> _selectedCategories = [...CitiesInUK.eventCategories.take(1)];
 
   String? _selectedBannerUrl;
 
@@ -293,7 +296,6 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void _addTimelineDescriptionFormField() {
     // Add a new form field when the button is clicked
-    // Add a new form field when the button is clicked
     final newController = TextEditingController();
     setState(() {
       _timelineDescriptionControllers.add(newController);
@@ -309,7 +311,6 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void _addTimelineTime() {
-    // Add a new form field when the button is clicked
     // Add a new form field when the button is clicked
     final newTimeOfDay = TimeOfDay.now();
     setState(() {
@@ -400,6 +401,16 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void dispose() {
     super.dispose();
+    _nameController.dispose();
+    _descriptionController.dispose();
+    _venueController.dispose();
+    _postcodeController.dispose();
+    _addressController.dispose();
+    _bannerUrlController.dispose();
+    _hostController.dispose();
+    _ticketPriceController.dispose();
+    _ticketUrlController.dispose();
+    
     for (var controller in _genreFormControllers) {
       controller.dispose();
     }
@@ -613,7 +624,20 @@ class _MyHomePageState extends State<MyHomePage> {
                     const SizedBox(
                       height: 20,
                     ),
-
+                    Row(
+                      children: [
+                        Expanded(
+                          child: CTextFormField(
+                            controller: _bannerUrlController,
+                            type: TextInputType.url,
+                            label: 'Banner Url',
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(
+                      height: 20,
+                    ),
                     // Column(
                     //   crossAxisAlignment: CrossAxisAlignment.start,
                     //   children: [
@@ -816,10 +840,12 @@ class _MyHomePageState extends State<MyHomePage> {
                     const SizedBox(
                       height: 20,
                     ),
-
-                    ElevatedButton(
-                      onPressed: () => _createEvent(),
-                      child: const Text('Create Event'),
+                    SizedBox(
+                      width: double.infinity,
+                      child: TextButton(
+                        onPressed: () => _createEvent(),
+                        child: const Text('Create Event', style: TextStyle(fontWeight: FontWeight.bold),),
+                      ),
                     )
                   ],
                 ),
