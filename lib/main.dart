@@ -114,7 +114,7 @@ class _MyHomePageState extends State<MyHomePage> {
   final TextEditingController _ticketPriceController = TextEditingController();
   final TextEditingController _ticketUrlController = TextEditingController();
 
-  String? _selectedCity;
+  String _selectedCity = CitiesInUK.cities.first;
   final List<String> _selectedCategories = [];
 
   String? _selectedBannerUrl;
@@ -493,7 +493,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     const SizedBox(
                       height: 4,
                     ),
-                    SizedBox(
+                    FormFieldContainer(
                       height: 200,
                       child: ListView.builder(
                         itemCount: _genreFormControllers.length,
@@ -530,88 +530,54 @@ class _MyHomePageState extends State<MyHomePage> {
                         },
                       ),
                     ),
-                    // const SizedBox(
-                    //   height: 20,
-                    // ),
-                    // FormFieldContainer(
-                    //     width: 500,
-                    //     child: Row(
-                    //       children: [
-                    //         Column(
-                    //           crossAxisAlignment: CrossAxisAlignment.start,
-                    //           children: [
-                    //             CTextFormField(
-                    //               controller: _venueController,
-                    //               width: 200,
-                    //               type: TextInputType.streetAddress,
-                    //               label: 'Venue',
-                    //             ),
-                    //           ],
-                    //         ),
-                    //         const SizedBox(
-                    //           width: 10,
-                    //         ),
-                    //         Column(
-                    //           crossAxisAlignment: CrossAxisAlignment.start,
-                    //           children: [
-                    //             SizedBox(
-                    //               width: 250,
-                    //               child: DropdownButtonFormField(
-                    //                 items: _citiesToDropdown(),
-                    //                 onChanged: (value) {
-                    //                   setState(() {
-                    //                     _selectedCity = value;
-                    //                   });
-                    //                 },
-                    //                 validator: (value) {
-                    //                   if (value == null || value.isEmpty) {
-                    //                     return 'City has not been provided';
-                    //                   }
-                    //                   return null;
-                    //                 },
-                    //               ),
-                    //             ),
-                    //           ],
-                    //         ),
-                    //       ],
-                    //     )),
-                    // const SizedBox(
-                    //   height: 20,
-                    // ),
-                    // FormFieldContainer(
-                    //     width: 500,
-                    //     child: Row(
-                    //       children: [
-                    //         Column(
-                    //           crossAxisAlignment: CrossAxisAlignment.start,
-                    //           children: [
-                    //             CTextFormField(
-                    //               controller: _postcodeController,
-                    //               width: 200,
-                    //               type: TextInputType.streetAddress,
-                    //               label: 'Postcode',
-                    //             ),
-                    //           ],
-                    //         ),
-                    //         const SizedBox(
-                    //           width: 10,
-                    //         ),
-                    //         Column(
-                    //           crossAxisAlignment: CrossAxisAlignment.start,
-                    //           children: [
-                    //             CTextFormField(
-                    //               controller: _addressController,
-                    //               width: 200,
-                    //               type: TextInputType.streetAddress,
-                    //               label: 'Address',
-                    //             ),
-                    //           ],
-                    //         ),
-                    //       ],
-                    //     )),
-                    // const SizedBox(
-                    //   height: 20,
-                    // ),
+                    const SizedBox(
+                      height: 20,
+                    ),
+                    CTextFormField(
+                      controller: _venueController,
+                      type: TextInputType.streetAddress,
+                      label: 'Venue',
+                    ),
+                    const SizedBox(
+                      height: 20,
+                    ),
+                    DropdownButtonFormField(
+                      value: _selectedCity,
+                      items: _citiesToDropdown(),
+                      onChanged: (value) {
+                        if (value != null) {
+                          setState(() {
+                            _selectedCity = value;
+                          });
+                        }
+                      },
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'City has not been provided';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(
+                      height: 20,
+                    ),
+                    CTextFormField(
+                      controller: _postcodeController,
+                      type: TextInputType.streetAddress,
+                      label: 'Postcode',
+                    ),
+                    const SizedBox(
+                      height: 20,
+                    ),
+                    CTextFormField(
+                      controller: _addressController,
+                      type: TextInputType.streetAddress,
+                      label: 'Address',
+                    ),
+                    const SizedBox(
+                      height: 20,
+                    ),
+
                     // Column(
                     //   crossAxisAlignment: CrossAxisAlignment.start,
                     //   children: [
@@ -641,54 +607,31 @@ class _MyHomePageState extends State<MyHomePage> {
                     // const SizedBox(
                     //   height: 20,
                     // ),
-                    // Column(
-                    //   crossAxisAlignment: CrossAxisAlignment.start,
-                    //   children: [
-                    //     CTextFormField(
-                    //       controller: _hostController,
-                    //       width: 400,
-                    //       type: TextInputType.name,
-                    //       label: 'Host',
-                    //     ),
-                    //   ],
-                    // ),
-                    // const SizedBox(
-                    //   height: 20,
-                    // ),
-                    // Container(
-                    //   color: Colors.grey.shade200,
-                    //   padding: const EdgeInsets.all(8),
-                    //   width: 400,
-                    //   child: Row(
-                    //     children: [
-                    //       Column(
-                    //         crossAxisAlignment: CrossAxisAlignment.start,
-                    //         children: [
-                    //           CTextFormField(
-                    //             controller: _ticketPriceController,
-                    //             width: 100,
-                    //             type: TextInputType.number,
-                    //             label: 'Ticket Price',
-                    //           ),
-                    //         ],
-                    //       ),
-                    //       const SizedBox(
-                    //         width: 10,
-                    //       ),
-                    //       Column(
-                    //         crossAxisAlignment: CrossAxisAlignment.start,
-                    //         children: [
-                    //           CTextFormField(
-                    //             controller: _ticketUrlController,
-                    //             width: 200,
-                    //             type: TextInputType.url,
-                    //             label: 'Ticket Url',
-                    //           ),
-                    //         ],
-                    //       ),
-                    //     ],
-                    //   ),
-                    // ),
+                    CTextFormField(
+                      controller: _hostController,
+                      type: TextInputType.name,
+                      label: 'Host',
+                    ),
+                    const SizedBox(
+                      height: 20,
+                    ),
+                    CTextFormField(
+                      controller: _ticketPriceController,
+                      type: TextInputType.number,
+                      label: 'Ticket price',
+                    ),
+                    const SizedBox(
+                      height: 20,
+                    ),
+                    CTextFormField(
+                      controller: _ticketUrlController,
+                      type: TextInputType.url,
+                      label: 'Ticket url',
+                    ),
+                    const SizedBox(
+                      height: 20,
+                    ),
+                    
                     //
                     // /// Lineup
                     // const SizedBox(
