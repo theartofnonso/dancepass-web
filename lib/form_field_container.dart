@@ -12,7 +12,7 @@ class FormFieldContainer extends StatelessWidget {
       padding: const EdgeInsets.all(16.0),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12.0),
+        borderRadius: BorderRadius.circular(8.0),
         border: Border.all(
           color: Colors.grey.shade100,
           width: 2.0,

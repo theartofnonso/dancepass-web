@@ -36,11 +36,29 @@ class MyApp extends StatelessWidget {
           // or simply save your changes to "hot reload" in a Flutter IDE).
           // Notice that the counter didn't reset back to zero; the application
           // is not restarted.
+          useMaterial3: true,
           primarySwatch: Colors.blue,
+          chipTheme: ChipThemeData(
+            secondarySelectedColor: Colors.black,
+            secondaryLabelStyle: const TextStyle(color: Colors.white),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(5.0),
+              side: const BorderSide(
+                color: Colors.grey,
+                width: 1.0,
+              ),
+            ),
+            side: BorderSide(
+              color: Colors.grey.shade300,
+              width: 1.0,
+            ),
+            checkmarkColor: Colors.white,
+          ),
           inputDecorationTheme: InputDecorationTheme(
+            contentPadding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 12),
             enabledBorder: OutlineInputBorder(
-              borderSide: BorderSide(color: Colors.grey.shade300, width: 1.5),
-              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(color: Colors.grey.shade300, width: 1.2),
+              borderRadius: BorderRadius.circular(5),
             ),
             filled: true,
             fillColor: Colors.white,
@@ -54,7 +72,7 @@ class MyApp extends StatelessWidget {
             labelStyle: const TextStyle(
               fontFamily: 'Inter',
               fontWeight: FontWeight.bold,
-              fontSize: 16,
+              fontSize: 10,
             ),
           )),
       home: const MyHomePage(title: 'Welcome Dancepass Web'),
@@ -237,6 +255,14 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
+  void _removeGenreFormField(int index) {
+    if (_genreFormControllers.length > 1) {
+      setState(() {
+        _genreFormControllers.removeAt(index);
+      });
+    }
+  }
+
   void _addLineupFormField() {
     // Add a new form field when the button is clicked
     final newController = TextEditingController();
@@ -315,27 +341,21 @@ class _MyHomePageState extends State<MyHomePage> {
     return CitiesInUK.cities.map((city) => DropdownMenuItem(value: city, child: Text(city))).toList();
   }
 
-  List<DropdownMenuItem<String>> _eventCategoriesToDropdown() {
+  List<ChoiceChip> _eventCategoriesToChoiceChip() {
     return CitiesInUK.eventCategories
-        .map((category) => DropdownMenuItem(
-            value: category,
-            child: Row(
-              children: [
-                Checkbox(
-                  value: _selectedCategories.contains(category),
-                  onChanged: (_) {
-                    setState(() {
-                      if (_selectedCategories.contains(category)) {
-                        _selectedCategories.remove(category);
-                      } else {
-                        _selectedCategories.add(category);
-                      }
-                    });
-                  },
-                ),
-                Text(category),
-              ],
-            )))
+        .map((category) => ChoiceChip(
+              label: Text(category),
+              selected: _selectedCategories.contains(category),
+              onSelected: (bool selected) {
+                setState(() {
+                  if (_selectedCategories.contains(category)) {
+                    _selectedCategories.remove(category);
+                  } else {
+                    _selectedCategories.add(category);
+                  }
+                });
+              },
+            ))
         .toList();
   }
 
@@ -422,7 +442,9 @@ class _MyHomePageState extends State<MyHomePage> {
                             DateAndTime(onSelect: () => _selectDate(date: _selectedEndDate, period: end), label: _displayDate(rawDateTime: _selectedEndDate, period: end)),
                           ],
                         ),
-                        const SizedBox(height: 10,),
+                        const SizedBox(
+                          height: 10,
+                        ),
                         Row(
                           children: [
                             DateAndTime(onSelect: () => _selectTime(timeOfDay: _selectedStartTime, period: end), label: _displayTime(rawTimeOfDay: _selectedStartTime, period: start)),
@@ -441,89 +463,73 @@ class _MyHomePageState extends State<MyHomePage> {
                     const SizedBox(
                       height: 20,
                     ),
-                    // Column(
-                    //   crossAxisAlignment: CrossAxisAlignment.start,
-                    //   children: [
-                    //     const Text("Category"),
-                    //     const SizedBox(
-                    //       height: 4,
-                    //     ),
-                    //     SizedBox(
-                    //       width: 250,
-                    //       child: DropdownButtonFormField(
-                    //         items: _eventCategoriesToDropdown(),
-                    //         onChanged: (value) {
-                    //           setState(() {
-                    //             if (value != null) {
-                    //               _selectedCategories.add(value);
-                    //             }
-                    //           });
-                    //         },
-                    //         validator: (value) {
-                    //           if (_selectedCategories.isEmpty) {
-                    //             return 'Category has not been provided';
-                    //           }
-                    //           return null;
-                    //         },
-                    //       ),
-                    //     )
-                    //   ],
-                    // ),
-                    // const SizedBox(
-                    //   height: 20,
-                    // ),
-                    //
-                    // /// Genre
-                    // const SizedBox(
-                    //   height: 20,
-                    // ),
-                    // const Text(
-                    //   "Genre",
-                    //   style: TextStyle(fontSize: 14),
-                    // ),
-                    // const SizedBox(
-                    //   height: 4,
-                    // ),
-                    // Row(
-                    //   mainAxisAlignment: MainAxisAlignment.center,
-                    //   crossAxisAlignment: CrossAxisAlignment.start,
-                    //   children: [
-                    //     Container(
-                    //       color: Colors.grey.shade200,
-                    //       padding: const EdgeInsets.all(8),
-                    //       height: 200,
-                    //       width: 400,
-                    //       child: ListView.builder(
-                    //         itemCount: _genreFormControllers.length,
-                    //         itemBuilder: (context, index) {
-                    //           return Column(
-                    //             crossAxisAlignment: CrossAxisAlignment.start,
-                    //             children: [
-                    //               CTextFormField(
-                    //                 controller: _genreFormControllers[index],
-                    //                 width: 400,
-                    //                 type: TextInputType.text,
-                    //                 label: 'Genre field ${index + 1}',
-                    //               ),
-                    //               const SizedBox(
-                    //                 height: 10,
-                    //               )
-                    //             ],
-                    //           );
-                    //         },
-                    //       ),
-                    //     ),
-                    //     const SizedBox(
-                    //       width: 10,
-                    //     ),
-                    //     GestureDetector(
-                    //         onTap: () => _addGenreFormField(),
-                    //         child: const Icon(
-                    //           Icons.add_box,
-                    //           size: 30,
-                    //         ))
-                    //   ],
-                    // ),
+                    Wrap(
+                      alignment: WrapAlignment.start,
+                      runAlignment: WrapAlignment.start,
+                      spacing: 8.0,
+                      children: _eventCategoriesToChoiceChip(),
+                    ),
+                    const SizedBox(
+                      height: 20,
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          "Genre",
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(
+                          width: 10,
+                        ),
+                        GestureDetector(
+                            onTap: () => _addGenreFormField(),
+                            child: const Icon(
+                              Icons.add_box,
+                              size: 30,
+                            )),
+                      ],
+                    ),
+                    const SizedBox(
+                      height: 4,
+                    ),
+                    SizedBox(
+                      height: 200,
+                      child: ListView.builder(
+                        itemCount: _genreFormControllers.length,
+                        itemBuilder: (context, index) {
+                          return Column(
+                            children: [
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  GestureDetector(
+                                      onTap: () => _removeGenreFormField(index),
+                                      child: const Icon(
+                                        Icons.remove_circle_outline,
+                                        color: Colors.redAccent,
+                                        size: 18,
+                                      )),
+                                  const SizedBox(
+                                    width: 8,
+                                  ),
+                                  Expanded(
+                                    child: CTextFormField(
+                                      controller: _genreFormControllers[index],
+                                      type: TextInputType.text,
+                                      label: 'Genre field ${index + 1}',
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(
+                                height: 10,
+                              )
+                            ],
+                          );
+                        },
+                      ),
+                    ),
                     // const SizedBox(
                     //   height: 20,
                     // ),
