@@ -1,6 +1,20 @@
-import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'dart:html';
 
-void main() {
+import 'package:dancepassweb/cities.dart';
+import 'package:dancepassweb/form_field_container.dart';
+import 'package:flutter/material.dart';
+import 'package:intl/date_symbol_data_local.dart' as date_formatter;
+import 'package:intl/intl.dart';
+import 'package:intl/intl_browser.dart';
+
+import 'form_field.dart';
+
+void main() async {
+  findSystemLocale();
+
+  await date_formatter.initializeDateFormatting();
+
   runApp(const MyApp());
 }
 
@@ -13,17 +27,17 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Flutter Demo',
       theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // Try running your application with "flutter run". You'll see the
-        // application has a blue toolbar. Then, without quitting the app, try
-        // changing the primarySwatch below to Colors.green and then invoke
-        // "hot reload" (press "r" in the console where you ran "flutter run",
-        // or simply save your changes to "hot reload" in a Flutter IDE).
-        // Notice that the counter didn't reset back to zero; the application
-        // is not restarted.
-        primarySwatch: Colors.blue,
-      ),
+          // This is the theme of your application.
+          //
+          // Try running your application with "flutter run". You'll see the
+          // application has a blue toolbar. Then, without quitting the app, try
+          // changing the primarySwatch below to Colors.green and then invoke
+          // "hot reload" (press "r" in the console where you ran "flutter run",
+          // or simply save your changes to "hot reload" in a Flutter IDE).
+          // Notice that the counter didn't reset back to zero; the application
+          // is not restarted.
+          primarySwatch: Colors.blue,
+          inputDecorationTheme: const InputDecorationTheme()),
       home: const MyHomePage(title: 'Welcome Dancepass Web'),
     );
   }
@@ -48,17 +62,221 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+  final _formKey = GlobalKey<FormState>();
 
-  void _incrementCounter() {
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _descriptionController = TextEditingController();
+  final TextEditingController _venueController = TextEditingController();
+  final TextEditingController _postcodeController = TextEditingController();
+  final TextEditingController _addressController = TextEditingController();
+  final TextEditingController _bannerUrlController = TextEditingController();
+  final TextEditingController _hostController = TextEditingController();
+  final TextEditingController _ticketPriceController = TextEditingController();
+  final TextEditingController _ticketUrlController = TextEditingController();
+
+  String? _selectedCity;
+  final List<String> _selectedCategories = [];
+
+  final List<TextEditingController> _genreFormControllers = [TextEditingController()];
+  final List<TextEditingController> _lineupFormControllers = [TextEditingController()];
+  final List<TextEditingController> _timelineDescriptionControllers = [TextEditingController()];
+  final List<TimeOfDay> _timelineTimes = [TimeOfDay.now()];
+
+  DateTime _selectedStartDate = DateTime.now();
+  TimeOfDay _selectedStartTime = TimeOfDay.now();
+
+  DateTime _selectedEndDate = DateTime.now();
+  TimeOfDay _selectedEndTime = TimeOfDay.now();
+
+  Future<void> _selectDate({required DateTime date, required period}) async {
+    final picked = await showDatePicker(context: context, initialDate: DateTime.now(), firstDate: DateTime.now(), lastDate: DateTime.now().add(const Duration(days: 365)));
+    if (picked != null && picked != date) {
+      switch (period) {
+        case "START":
+          setState(() {
+            _selectedStartDate = picked;
+          });
+          break;
+        case "END":
+          setState(() {
+            _selectedEndDate = picked;
+          });
+          break;
+        default:
+          throw Exception("Invalid time period");
+      }
+    }
+  }
+
+  Future<void> _selectTime({required TimeOfDay timeOfDay, required period}) async {
+    final picked = await showTimePicker(context: context, initialTime: TimeOfDay.now());
+    if (picked != null && picked != timeOfDay) {
+      switch (period) {
+        case "START":
+          setState(() {
+            _selectedStartTime = picked;
+          });
+          break;
+        case "END":
+          setState(() {
+            _selectedEndTime = picked;
+          });
+          break;
+        default:
+          throw Exception("Invalid time period");
+      }
+    }
+  }
+
+  Future<void> _selectTimelinePeriod(int index) async {
+    final pickedTime = await showTimePicker(
+      context: context,
+      initialTime: _timelineTimes[index],
+    );
+    if (pickedTime != null) {
+      setState(() {
+        _timelineTimes[index] = pickedTime;
+      });
+    }
+  }
+
+  List<Map<String, String>> _getAllTimeline() {
+    final timelineDescriptions = _timelineDescriptionControllers.map((controller) => controller.text).toList();
+    List<Map<String, String>> timeline = [];
+    for (var i = 0; i < timelineDescriptions.length; i++) {
+      timeline.add({
+        "description": timelineDescriptions[i],
+        "time": _timelineTimes[i].toString()
+      });
+    }
+    return timeline;
+  }
+
+  Future<void> _createEvent() async {
+    if (_formKey.currentState!.validate()) {
+      final payload = {
+        "name": _nameController.text,
+        "description": _descriptionController.text,
+        "category": _selectedCategories.map((category) => category).toList(),
+        "genre": _genreFormControllers.map((controller) => controller.text).toList(),
+        "startDateTime": "2023-05-08T19:30:00.000Z",
+        "endDateTime": "2023-05-09T02:00:00.000Z",
+        "venue": _venueController.text,
+        "city": _selectedCity,
+        "country": "UK",
+        "postcode": _postcodeController.text,
+        "address": _addressController.text,
+        "bannerUrl": "https://d29oxdp3wol7wi.cloudfront.net/public/banners/carribeans_in_london_festival.jpg",
+        "hostName": _hostController.text,
+        "lineup": _lineupFormControllers.map((controller) => controller.text).toList(),
+        "timeline": _getAllTimeline(),
+        "ticketPrice": _ticketPriceController.text,
+        "ticketsUrl": _ticketUrlController.text
+      };
+
+      final json = jsonEncode(payload);
+
+      print(json);
+
+      print("Event is being created");
+    } else {
+      print("Event is not being created");
+    }
+  }
+
+  void _addGenreFormField() {
+    // Add a new form field when the button is clicked
+    final newController = TextEditingController();
     setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
+      _genreFormControllers.add(newController);
     });
+  }
+
+  void _addLineupFormField() {
+    // Add a new form field when the button is clicked
+    final newController = TextEditingController();
+    setState(() {
+      _lineupFormControllers.add(newController);
+    });
+  }
+
+  void _addTimeline() {
+    _addTimelineFormField();
+    _addTimelineTime();
+  }
+
+  void _addTimelineFormField() {
+    // Add a new form field when the button is clicked
+    // Add a new form field when the button is clicked
+    final newController = TextEditingController();
+    setState(() {
+      _timelineDescriptionControllers.add(newController);
+    });
+  }
+
+  void _addTimelineTime() {
+    // Add a new form field when the button is clicked
+    // Add a new form field when the button is clicked
+    final newTimeOfDay = TimeOfDay.now();
+    setState(() {
+      _timelineTimes.add(newTimeOfDay);
+    });
+  }
+
+  String _displayDate(DateTime rawDateTime) {
+    return DateFormat("EE dd MMM", "en").format(rawDateTime);
+  }
+
+  String _displayTime(TimeOfDay rawTimeOfDay) {
+    final dateTime = DateTime(2021, 1, 1, rawTimeOfDay.hour, rawTimeOfDay.minute);
+    return DateFormat("Hm", "en").format(dateTime);
+  }
+
+  List<DropdownMenuItem<String>> _citiesToDropdown() {
+    return CitiesInUK.cities.map((city) => DropdownMenuItem(value: city, child: Text(city))).toList();
+  }
+
+  List<DropdownMenuItem<String>> _eventCategoriesToDropdown() {
+    return CitiesInUK.eventCategories
+        .map((category) => DropdownMenuItem(
+            value: category,
+            child: Row(
+              children: [
+                Checkbox(
+                  value: _selectedCategories.contains(category),
+                  onChanged: (_) {
+                    setState(() {
+                      if (_selectedCategories.contains(category)) {
+                        _selectedCategories.remove(category);
+                      } else {
+                        _selectedCategories.add(category);
+                      }
+                    });
+                  },
+                ),
+                Text(category),
+              ],
+            )))
+        .toList();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    for (var controller in _genreFormControllers) {
+      controller.dispose();
+    }
+    for (var controller in _lineupFormControllers) {
+      controller.dispose();
+    }
+    for (var controller in _timelineDescriptionControllers) {
+      controller.dispose();
+    }
   }
 
   @override
@@ -70,46 +288,543 @@ class _MyHomePageState extends State<MyHomePage> {
     // fast, so that you can just rebuild anything that needs updating rather
     // than having to individually change instances of widgets.
     return Scaffold(
-      appBar: AppBar(
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Invoke "debug painting" (press "p" in the console, choose the
-          // "Toggle Debug Paint" action from the Flutter Inspector in Android
-          // Studio, or the "Toggle Debug Paint" command in Visual Studio Code)
-          // to see the wireframe for each widget.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text(
-              'You have pushed the button this many times:',
-            ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-          ],
+        appBar: AppBar(
+          // Here we take the value from the MyHomePage object that was created by
+          // the App.build method, and use it to set our appbar title.
+          title: Text(widget.title),
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
-    );
+        body: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  const Text(
+                    "Name",
+                    style: TextStyle(fontSize: 14),
+                  ),
+                  const SizedBox(
+                    height: 4,
+                  ),
+                  CTextFormField(
+                    controller: _nameController,
+                    width: 400,
+                    type: TextInputType.name,
+                    onChanged: () {},
+                    label: 'Name',
+                  ),
+                  const SizedBox(
+                    height: 20,
+                  ),
+                  const Text(
+                    "Description",
+                    style: TextStyle(fontSize: 14),
+                  ),
+                  const SizedBox(
+                    height: 4,
+                  ),
+                  SizedBox(
+                    width: 400,
+                    child: TextFormField(
+                      controller: _descriptionController,
+                      maxLines: 10,
+                      decoration: const InputDecoration(border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(3)))),
+                      onChanged: (value) {},
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Description has not been provided';
+                        }
+                        return null;
+                      },
+                    ),
+                  ),
+                  const SizedBox(
+                    height: 20,
+                  ),
+                  FormFieldContainer(
+                      width: 400,
+                      child: Row(
+                        children: [
+                          ElevatedButton(
+                            onPressed: () => _selectDate(date: _selectedStartDate, period: "START"),
+                            child: const Text('Select start date'),
+                          ),
+                          const SizedBox(
+                            width: 20,
+                          ),
+                          Text(
+                            _displayDate(_selectedStartDate),
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          )
+                        ],
+                      )),
+                  const SizedBox(
+                    height: 20,
+                  ),
+                  FormFieldContainer(
+                      width: 400,
+                      child: Row(
+                        children: [
+                          ElevatedButton(
+                            onPressed: () => _selectTime(timeOfDay: _selectedStartTime, period: "START"),
+                            child: const Text('Select start time'),
+                          ),
+                          const SizedBox(
+                            width: 20,
+                          ),
+                          Text(_displayTime(_selectedStartTime), style: const TextStyle(fontWeight: FontWeight.bold))
+                        ],
+                      )),
+                  const SizedBox(
+                    height: 20,
+                  ),
+                  FormFieldContainer(
+                      width: 400,
+                      child: Row(
+                        children: [
+                          ElevatedButton(
+                            onPressed: () => _selectDate(date: _selectedEndDate, period: "END"),
+                            child: const Text('Select end date'),
+                          ),
+                          const SizedBox(
+                            width: 20,
+                          ),
+                          Text(_displayDate(_selectedEndDate), style: const TextStyle(fontWeight: FontWeight.bold))
+                        ],
+                      )),
+                  const SizedBox(
+                    height: 20,
+                  ),
+                  FormFieldContainer(
+                      width: 400,
+                      child: Row(
+                        children: [
+                          ElevatedButton(
+                            onPressed: () => _selectTime(timeOfDay: _selectedEndTime, period: "END"),
+                            child: const Text('Select end time'),
+                          ),
+                          const SizedBox(
+                            width: 20,
+                          ),
+                          Text(_displayTime(_selectedEndTime), style: const TextStyle(fontWeight: FontWeight.bold))
+                        ],
+                      )),
+                  const SizedBox(
+                    height: 20,
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text("Category"),
+                      const SizedBox(
+                        height: 4,
+                      ),
+                      SizedBox(
+                        width: 250,
+                        child: DropdownButtonFormField(
+                          items: _eventCategoriesToDropdown(),
+                          onChanged: (value) {
+                            setState(() {
+                              if (value != null) {
+                                _selectedCategories.add(value);
+                              }
+                            });
+                          },
+                          validator: (value) {
+                            if (_selectedCategories.isEmpty) {
+                              return 'Category has not been provided';
+                            }
+                            return null;
+                          },
+                        ),
+                      )
+                    ],
+                  ),
+                  const SizedBox(
+                    height: 20,
+                  ),
+
+                  /// Genre
+                  const SizedBox(
+                    height: 20,
+                  ),
+                  const Text(
+                    "Genre",
+                    style: TextStyle(fontSize: 14),
+                  ),
+                  const SizedBox(
+                    height: 4,
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        color: Colors.grey.shade200,
+                        padding: const EdgeInsets.all(8),
+                        height: 200,
+                        width: 400,
+                        child: ListView.builder(
+                          itemCount: _genreFormControllers.length,
+                          itemBuilder: (context, index) {
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                CTextFormField(
+                                  controller: _genreFormControllers[index],
+                                  width: 400,
+                                  type: TextInputType.text,
+                                  onChanged: () {},
+                                  label: 'Genre field ${index + 1}',
+                                ),
+                                const SizedBox(
+                                  height: 10,
+                                )
+                              ],
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(
+                        width: 10,
+                      ),
+                      GestureDetector(
+                          onTap: () => _addGenreFormField(),
+                          child: const Icon(
+                            Icons.add_circle,
+                            size: 30,
+                          ))
+                    ],
+                  ),
+                  const SizedBox(
+                    height: 20,
+                  ),
+                  FormFieldContainer(
+                      width: 500,
+                      child: Row(
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                "Venue",
+                                style: TextStyle(fontSize: 14),
+                              ),
+                              const SizedBox(
+                                height: 4,
+                              ),
+                              CTextFormField(
+                                controller: _venueController,
+                                width: 200,
+                                type: TextInputType.streetAddress,
+                                onChanged: () {},
+                                label: 'Venue',
+                              ),
+                            ],
+                          ),
+                          const SizedBox(
+                            width: 10,
+                          ),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                "City",
+                                style: TextStyle(fontSize: 14),
+                              ),
+                              const SizedBox(
+                                height: 4,
+                              ),
+                              SizedBox(
+                                width: 250,
+                                child: DropdownButtonFormField(
+                                  items: _citiesToDropdown(),
+                                  onChanged: (value) {
+                                    setState(() {
+                                      _selectedCity = value;
+                                    });
+                                  },
+                                  validator: (value) {
+                                    if (value == null || value.isEmpty) {
+                                      return 'City has not been provided';
+                                    }
+                                    return null;
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      )),
+                  const SizedBox(
+                    height: 20,
+                  ),
+                  FormFieldContainer(
+                      width: 500,
+                      child: Row(
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                "Postcode",
+                                style: TextStyle(fontSize: 14),
+                              ),
+                              const SizedBox(
+                                height: 4,
+                              ),
+                              CTextFormField(
+                                controller: _postcodeController,
+                                width: 200,
+                                type: TextInputType.streetAddress,
+                                onChanged: () {},
+                                label: 'Postcode',
+                              ),
+                            ],
+                          ),
+                          const SizedBox(
+                            width: 10,
+                          ),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                "Address",
+                                style: TextStyle(fontSize: 14),
+                              ),
+                              const SizedBox(
+                                height: 4,
+                              ),
+                              CTextFormField(
+                                controller: _addressController,
+                                width: 200,
+                                type: TextInputType.streetAddress,
+                                onChanged: () {},
+                                label: 'Address',
+                              ),
+                            ],
+                          ),
+                        ],
+                      )),
+                  const SizedBox(
+                    height: 20,
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "Banner",
+                        style: TextStyle(fontSize: 14),
+                      ),
+                      const SizedBox(
+                        height: 4,
+                      ),
+                      CTextFormField(
+                        controller: _bannerUrlController,
+                        width: 400,
+                        type: TextInputType.url,
+                        onChanged: () {},
+                        label: 'Banner',
+                      ),
+                    ],
+                  ),
+                  const SizedBox(
+                    height: 20,
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "Host",
+                        style: TextStyle(fontSize: 14),
+                      ),
+                      const SizedBox(
+                        height: 4,
+                      ),
+                      CTextFormField(
+                        controller: _hostController,
+                        width: 400,
+                        type: TextInputType.name,
+                        onChanged: () {},
+                        label: 'Host',
+                      ),
+                    ],
+                  ),
+                  const SizedBox(
+                    height: 20,
+                  ),
+                  Container(
+                    color: Colors.grey.shade200,
+                    padding: const EdgeInsets.all(8),
+                    width: 400,
+                    child: Row(
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              "Ticket Price",
+                              style: TextStyle(fontSize: 14),
+                            ),
+                            const SizedBox(
+                              height: 4,
+                            ),
+                            CTextFormField(
+                              controller: _ticketPriceController,
+                              width: 100,
+                              type: TextInputType.number,
+                              onChanged: () {},
+                              label: 'Ticket Price',
+                            ),
+                          ],
+                        ),
+                        const SizedBox(
+                          width: 10,
+                        ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              "Ticket Url",
+                              style: TextStyle(fontSize: 14),
+                            ),
+                            const SizedBox(
+                              height: 4,
+                            ),
+                            CTextFormField(
+                              controller: _ticketUrlController,
+                              width: 200,
+                              type: TextInputType.url,
+                              onChanged: () {},
+                              label: 'Ticket Url',
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  /// Lineup
+                  const SizedBox(
+                    height: 20,
+                  ),
+                  const Text(
+                    "Line Up",
+                    style: TextStyle(fontSize: 14),
+                  ),
+                  const SizedBox(
+                    height: 4,
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        color: Colors.grey.shade200,
+                        padding: const EdgeInsets.all(8),
+                        height: 200,
+                        width: 400,
+                        child: ListView.builder(
+                          itemCount: _lineupFormControllers.length,
+                          itemBuilder: (context, index) {
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                CTextFormField(
+                                  controller: _lineupFormControllers[index],
+                                  width: 400,
+                                  type: TextInputType.text,
+                                  onChanged: () {},
+                                  label: 'Lineup field ${index + 1}',
+                                ),
+                                const SizedBox(
+                                  height: 10,
+                                )
+                              ],
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(
+                        width: 10,
+                      ),
+                      GestureDetector(
+                          onTap: () => _addLineupFormField(),
+                          child: const Icon(
+                            Icons.add_circle,
+                            size: 30,
+                          ))
+                    ],
+                  ),
+
+                  /// Timeline
+                  const SizedBox(
+                    height: 20,
+                  ),
+                  const Text(
+                    "Timeline of events",
+                    style: TextStyle(fontSize: 14),
+                  ),
+                  const SizedBox(
+                    height: 4,
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        color: Colors.grey.shade200,
+                        padding: const EdgeInsets.only(top: 8, right: 8, bottom: 8),
+                        height: 200,
+                        width: 400,
+                        child: ListView.builder(
+                          itemCount: _timelineDescriptionControllers.length,
+                          itemBuilder: (context, index) {
+                            return ListTile(
+                              title: CTextFormField(
+                                controller: _timelineDescriptionControllers[index],
+                                width: 400,
+                                type: TextInputType.text,
+                                onChanged: () {},
+                                label: 'Timeline field ${index + 1}',
+                              ),
+                              subtitle: const Padding(
+                                padding: EdgeInsets.all(8.0),
+                                child: Text("Doors open at 5pm"),
+                              ),
+                              trailing: IconButton(
+                                icon: const Icon(Icons.access_time),
+                                onPressed: () => _selectTimelinePeriod(index),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(
+                        width: 10,
+                      ),
+                      GestureDetector(
+                          onTap: () => _addTimeline(),
+                          child: const Icon(
+                            Icons.add_circle,
+                            size: 30,
+                          ))
+                    ],
+                  ),
+                  const SizedBox(
+                    height: 20,
+                  ),
+                  ElevatedButton(
+                    onPressed: () => _createEvent(),
+                    child: const Text('Create Event'),
+                  )
+                ],
+              ),
+            ),
+          ),
+        ) // This trailing comma makes auto-formatting nicer for build methods.
+        );
   }
 }
