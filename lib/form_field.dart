@@ -20,7 +20,7 @@ class CTextFormField extends StatelessWidget {
         decoration: InputDecoration(
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(3)),
         ),
-        onChanged: (value) => onChanged(),
+        onChanged: (value) => onChanged(value),
         validator: (value) {
           if (value == null || value.isEmpty) {
             return '$label has not been provided';

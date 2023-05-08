@@ -81,6 +81,7 @@ class _MyHomePageState extends State<MyHomePage> {
   final List<TextEditingController> _lineupFormControllers = [TextEditingController()];
   final List<TextEditingController> _timelineDescriptionControllers = [TextEditingController()];
   final List<TimeOfDay> _timelineTimes = [TimeOfDay.now()];
+  final List<String> _timelineSummaries = ["event at 17:30"];
 
   DateTime _selectedStartDate = DateTime.now();
   TimeOfDay _selectedStartTime = TimeOfDay.now();
@@ -136,6 +137,7 @@ class _MyHomePageState extends State<MyHomePage> {
     if (pickedTime != null) {
       setState(() {
         _timelineTimes[index] = pickedTime;
+        _displayTimelineSummary(index, _timelineDescriptionControllers[index].text, _timelineTimes[index]);
       });
     }
   }
@@ -203,6 +205,7 @@ class _MyHomePageState extends State<MyHomePage> {
   void _addTimeline() {
     _addTimelineFormField();
     _addTimelineTime();
+    _timelineSummaries.add("event at 17:30");
   }
 
   void _addTimelineFormField() {
@@ -230,6 +233,12 @@ class _MyHomePageState extends State<MyHomePage> {
   String _displayTime(TimeOfDay rawTimeOfDay) {
     final dateTime = DateTime(2021, 1, 1, rawTimeOfDay.hour, rawTimeOfDay.minute);
     return DateFormat("Hm", "en").format(dateTime);
+  }
+
+  void _displayTimelineSummary(int index, String description, TimeOfDay rawTimeOfDay) {
+    setState(() {
+      _timelineSummaries[index] = "$description at ${_displayTime(rawTimeOfDay)}";
+    });
   }
 
   List<DropdownMenuItem<String>> _citiesToDropdown() {
@@ -787,12 +796,14 @@ class _MyHomePageState extends State<MyHomePage> {
                                 controller: _timelineDescriptionControllers[index],
                                 width: 400,
                                 type: TextInputType.text,
-                                onChanged: () {},
+                                onChanged: (value) {
+                                  _displayTimelineSummary(index, _timelineDescriptionControllers[index].text, _timelineTimes[index]);
+                                },
                                 label: 'Timeline field ${index + 1}',
                               ),
-                              subtitle: const Padding(
-                                padding: EdgeInsets.all(8.0),
-                                child: Text("Doors open at 5pm"),
+                              subtitle: Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Text(_timelineSummaries[index]),
                               ),
                               trailing: IconButton(
                                 icon: const Icon(Icons.access_time),
