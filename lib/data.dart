@@ -1,4 +1,4 @@
-class CitiesInUK {
+class EventData {
 
   static List<String> cities = [
     'Aberdeen',

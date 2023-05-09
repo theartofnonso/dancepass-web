@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:dancepassweb/cities.dart';
+import 'package:dancepassweb/data.dart';
 import 'package:dancepassweb/datetime_container.dart';
 import 'package:dancepassweb/form_field_container.dart';
 import 'package:flutter/material.dart';
@@ -117,8 +117,8 @@ class _MyHomePageState extends State<MyHomePage> {
   final TextEditingController _ticketPriceController = TextEditingController();
   final TextEditingController _ticketUrlController = TextEditingController();
 
-  String _selectedCity = CitiesInUK.cities.first;
-  final List<String> _selectedCategories = [...CitiesInUK.eventCategories.take(1)];
+  String _selectedCity = EventData.cities.first;
+  final List<String> _selectedCategories = [...EventData.eventCategories.take(1)];
 
   String? _selectedBannerUrl;
 
@@ -372,11 +372,11 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   List<DropdownMenuItem<String>> _citiesToDropdown() {
-    return CitiesInUK.cities.map((city) => DropdownMenuItem(value: city, child: Text(city))).toList();
+    return EventData.cities.map((city) => DropdownMenuItem(value: city, child: Text(city))).toList();
   }
 
   List<ChoiceChip> _eventCategoriesToChoiceChip() {
-    return CitiesInUK.eventCategories
+    return EventData.eventCategories
         .map((category) => ChoiceChip(
               label: Text(category),
               selected: _selectedCategories.contains(category),
@@ -410,7 +410,7 @@ class _MyHomePageState extends State<MyHomePage> {
     _hostController.dispose();
     _ticketPriceController.dispose();
     _ticketUrlController.dispose();
-    
+
     for (var controller in _genreFormControllers) {
       controller.dispose();
     }
@@ -625,48 +625,27 @@ class _MyHomePageState extends State<MyHomePage> {
                       height: 20,
                     ),
                     Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Expanded(
                           child: CTextFormField(
                             controller: _bannerUrlController,
                             type: TextInputType.url,
                             label: 'Banner Url',
+                            onChanged: (value) {
+                             setState(() {
+                               _selectedBannerUrl = _bannerUrlController.text;
+                             });
+                            },
                           ),
                         ),
+                        const SizedBox(width: 10,),
+                        _selectedBannerUrl != null ? Image.network(_bannerUrlController.text, width: 240, height: 240,) : const SizedBox.shrink()
                       ],
                     ),
                     const SizedBox(
                       height: 20,
                     ),
-                    // Column(
-                    //   crossAxisAlignment: CrossAxisAlignment.start,
-                    //   children: [
-                    //     SizedBox(
-                    //       width: 600,
-                    //       child: Row(
-                    //         children: [
-                    //           CTextFormField(
-                    //             controller: _bannerUrlController,
-                    //             width: 400,
-                    //             type: TextInputType.url,
-                    //             label: 'Banner',
-                    //             onChanged: (value) {
-                    //               setState(() {
-                    //                 if (value != null) {
-                    //                   _selectedBannerUrl = value;
-                    //                 }
-                    //               });
-                    //             },
-                    //           ),
-                    //           //_selectedBannerUrl != null ? Image.network(_bannerUrlController.text, fit: BoxFit.contain, repeat: ImageRepeat.noRepeat, scale: 1.0, width: 100, height: 100,) : const SizedBox.shrink(),
-                    //         ],
-                    //       ),
-                    //     ),
-                    //   ],
-                    // ),
-                    // const SizedBox(
-                    //   height: 20,
-                    // ),
                     CTextFormField(
                       controller: _hostController,
                       type: TextInputType.name,
