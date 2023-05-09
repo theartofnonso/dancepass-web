@@ -4,6 +4,7 @@ import 'package:dancepassweb/data.dart';
 import 'package:dancepassweb/datetime_container.dart';
 import 'package:dancepassweb/form_field_container.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/date_symbol_data_local.dart' as date_formatter;
 import 'package:intl/intl.dart';
 import 'package:intl/intl_browser.dart';
@@ -38,9 +39,7 @@ class MyApp extends StatelessWidget {
           // is not restarted.
           useMaterial3: true,
           primarySwatch: Colors.blue,
-          textButtonTheme: const TextButtonThemeData(
-            style: ButtonStyle()
-          ),
+          textButtonTheme: const TextButtonThemeData(style: ButtonStyle()),
           chipTheme: ChipThemeData(
             secondarySelectedColor: Colors.black,
             secondaryLabelStyle: const TextStyle(color: Colors.white),
@@ -363,7 +362,6 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void _setTimelineSummary(int index, String description, TimeOfDay rawTimeOfDay) {
-
     final dateTime = DateTime(2021, 1, 1, rawTimeOfDay.hour, rawTimeOfDay.minute);
 
     setState(() {
@@ -633,14 +631,22 @@ class _MyHomePageState extends State<MyHomePage> {
                             type: TextInputType.url,
                             label: 'Banner Url',
                             onChanged: (value) {
-                             setState(() {
-                               _selectedBannerUrl = _bannerUrlController.text;
-                             });
+                              setState(() {
+                                _selectedBannerUrl = _bannerUrlController.text;
+                              });
                             },
                           ),
                         ),
-                        const SizedBox(width: 10,),
-                        _selectedBannerUrl != null ? Image.network(_bannerUrlController.text, width: 240, height: 240,) : const SizedBox.shrink()
+                        const SizedBox(
+                          width: 10,
+                        ),
+                        _selectedBannerUrl != null
+                            ? Image.network(
+                                _bannerUrlController.text,
+                                width: 240,
+                                height: 240,
+                              )
+                            : const SizedBox.shrink()
                       ],
                     ),
                     const SizedBox(
@@ -654,19 +660,23 @@ class _MyHomePageState extends State<MyHomePage> {
                     const SizedBox(
                       height: 20,
                     ),
-                    CTextFormField(
-                      controller: _ticketPriceController,
-                      type: TextInputType.number,
-                      label: 'Ticket price',
-                    ),
+                    CTextFormField(controller: _ticketPriceController, type: TextInputType.number, label: 'Ticket price', inputFormatters: [
+                      FilteringTextInputFormatter.allow(RegExp("[^a-zA-Z\\-]+")),
+                    ]),
                     const SizedBox(
                       height: 20,
                     ),
                     CTextFormField(
-                      controller: _ticketUrlController,
-                      type: TextInputType.url,
-                      label: 'Ticket url',
-                    ),
+                        controller: _ticketUrlController,
+                        type: TextInputType.url,
+                        label: 'Ticket url',
+                        validator: () {
+                          final isValid = Uri.tryParse(_ticketUrlController.text)?.hasScheme == true;
+                          if (!isValid) {
+                            return "Ticket url is invalid";
+                          }
+                          return null;
+                        }),
                     const SizedBox(
                       height: 20,
                     ),
@@ -823,7 +833,10 @@ class _MyHomePageState extends State<MyHomePage> {
                       width: double.infinity,
                       child: TextButton(
                         onPressed: () => _createEvent(),
-                        child: const Text('Create Event', style: TextStyle(fontWeight: FontWeight.bold),),
+                        child: const Text(
+                          'Create Event',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
                       ),
                     )
                   ],
