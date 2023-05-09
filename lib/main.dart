@@ -391,6 +391,14 @@ class _MyHomePageState extends State<MyHomePage> {
         .toList();
   }
 
+  String? _validateUrl({required String url, required String label}) {
+    final isValid = Uri.tryParse(_ticketUrlController.text)?.hasScheme == true;
+    if (!isValid) {
+      return "$label url is invalid";
+    }
+    return null;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -627,15 +635,15 @@ class _MyHomePageState extends State<MyHomePage> {
                       children: [
                         Expanded(
                           child: CTextFormField(
-                            controller: _bannerUrlController,
-                            type: TextInputType.url,
-                            label: 'Banner Url',
-                            onChanged: (value) {
-                              setState(() {
-                                _selectedBannerUrl = _bannerUrlController.text;
-                              });
-                            },
-                          ),
+                              controller: _bannerUrlController,
+                              type: TextInputType.url,
+                              label: 'Banner Url',
+                              onChanged: (value) {
+                                setState(() {
+                                  _selectedBannerUrl = _bannerUrlController.text;
+                                });
+                              },
+                              validator: () => _validateUrl(url: _ticketUrlController.text, label: "Banner url")),
                         ),
                         const SizedBox(
                           width: 10,
@@ -666,17 +674,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     const SizedBox(
                       height: 20,
                     ),
-                    CTextFormField(
-                        controller: _ticketUrlController,
-                        type: TextInputType.url,
-                        label: 'Ticket url',
-                        validator: () {
-                          final isValid = Uri.tryParse(_ticketUrlController.text)?.hasScheme == true;
-                          if (!isValid) {
-                            return "Ticket url is invalid";
-                          }
-                          return null;
-                        }),
+                    CTextFormField(controller: _ticketUrlController, type: TextInputType.url, label: 'Ticket url', validator: () => _validateUrl(url: _ticketUrlController.text, label: "Ticket url")),
                     const SizedBox(
                       height: 20,
                     ),
