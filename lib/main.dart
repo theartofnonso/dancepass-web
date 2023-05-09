@@ -202,7 +202,7 @@ class _MyHomePageState extends State<MyHomePage> {
     List<String> timeline = [];
     for (var i = 0; i < timelineDescriptions.length; i++) {
       final dateTime = DateTime(now.year, now.month, now.day, _timelineTimes[i].hour, _timelineTimes[i].minute);
-      timeline.add(jsonEncode({"description": timelineDescriptions[i], "time": dateTime.toIso8601String()}));
+      timeline.add(jsonEncode({"description": timelineDescriptions[i], "time": "${dateTime.toIso8601String()}Z"}));
     }
     return timeline;
   }
@@ -230,7 +230,7 @@ class _MyHomePageState extends State<MyHomePage> {
             "country": "UK",
             "postcode": _postcodeController.text,
             "address": _addressController.text,
-            "bannerUrl": _bannerUrlController.text, //"https://d29oxdp3wol7wi.cloudfront.net/public/banners/carribeans_in_london_festival.jpg",
+            "bannerUrl": _bannerUrlController.text,
             "hostName": _hostController.text,
             "lineup": _lineupFormControllers.map((controller) => controller.text).toList(),
             "timeline": _getAllTimeline(),
@@ -285,13 +285,13 @@ class _MyHomePageState extends State<MyHomePage> {
   void _addTimeline() {
     _addTimelineDescriptionFormField();
     _addTimelineTime();
-    _timelineSummaries.add("event at 17:30");
+    _timelineSummaries.add("Event at 17:30");
   }
 
   void _removeTimeline(int index) {
     _removeTimelineDescriptionFormField(index);
     _removeTimelineTime(index);
-    //_timelineSummaries.remove("event at 17:30");
+    _timelineSummaries.removeAt(index);
   }
 
   void _addTimelineDescriptionFormField() {
