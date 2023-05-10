@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:dancepassweb/data.dart';
 import 'package:dancepassweb/datetime_container.dart';
 import 'package:dancepassweb/form_field_container.dart';
+import 'package:dancepassweb/http_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/date_symbol_data_local.dart' as date_formatter;
@@ -10,6 +11,8 @@ import 'package:intl/intl.dart';
 import 'package:intl/intl_browser.dart';
 
 import 'form_field.dart';
+
+import 'amplifyconfiguration.dart';
 
 void main() async {
   findSystemLocale();
@@ -237,15 +240,57 @@ class _MyHomePageState extends State<MyHomePage> {
             "ticketsUrl": _ticketUrlController.text
           };
 
-          final json = jsonEncode(payload);
+          final jsonPayload = jsonEncode(payload);
 
-          print(json);
+          try {
+            final createdEventId = await HttpFunctions.createEventDraft(payload: jsonPayload);
+            if (createdEventId != null) {
+              _onCreateEventDraft(createdEventId);
+            } else {
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Unable to create draft event")));
+              }
+            }
+          } catch (e) {
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Something went wrong on our end... We are fixing it")));
+          }
         } else {
           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Start date must be before end date")));
         }
-      } else {
-        print("Event is not being created");
       }
+    }
+  }
+
+  Future<void> _onCreateEventDraft(String eventId) async {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: const Text("Event has been drafted"),
+      action: SnackBarAction(
+        label: 'Go Live', // or some operation you would like
+        onPressed: () async {
+          await _postLiveEvent(eventId);
+        },
+      ),
+    ));
+  }
+
+  Future<void> _postLiveEvent(String eventId) async {
+    final payload = {
+      "status": "LIVE",
+    };
+    final jsonPayload = jsonEncode(payload);
+    try {
+      final isLive = await HttpFunctions.postLiveEvent(path: eventId, payload: jsonPayload);
+      if (isLive) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Event is no live on Dancepass")));
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Unable to post live event")));
+        }
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Something went wrong on our end... We are fixing it")));
     }
   }
 
@@ -397,11 +442,6 @@ class _MyHomePageState extends State<MyHomePage> {
       return "$label url is invalid";
     }
     return null;
-  }
-
-  @override
-  void initState() {
-    super.initState();
   }
 
   @override
