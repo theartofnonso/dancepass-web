@@ -590,7 +590,8 @@ class _MyHomePageState extends State<MyHomePage> {
     final streetAddress = _addressController.text;
     final postcode = _postcodeController.text;
 
-    if (venue.isNotEmpty && streetAddress.isNotEmpty && postcode.isNotEmpty) {
+    if (streetAddress.isNotEmpty && postcode.isNotEmpty) {
+
       final firstLine = [streetAddress, _selectedCity].join(", ");
 
       final address = '$firstLine $postcode';
@@ -986,6 +987,7 @@ class _MyHomePageState extends State<MyHomePage> {
                             Expanded(
                               child: CTextFormField(
                                 controller: _latitudeController,
+                                readOnly: true,
                                 type: TextInputType.number,
                                 prefixIcon: const Icon(
                                   Icons.location_on,
@@ -1001,6 +1003,7 @@ class _MyHomePageState extends State<MyHomePage> {
                             Expanded(
                               child: CTextFormField(
                                 controller: _longitudeController,
+                                readOnly: true,
                                 type: TextInputType.number,
                                 prefixIcon: const Icon(
                                   Icons.location_on,

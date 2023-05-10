@@ -9,15 +9,17 @@ class CTextFormField extends StatelessWidget {
   final Function? validator;
   final bool shouldValidate;
   final Widget? prefixIcon;
+  final bool readOnly;
   final TextCapitalization textCapitalization;
   final List<TextInputFormatter>? inputFormatters;
 
-  const CTextFormField({Key? key, required this.controller, required this.type, this.onChanged, required this.label, this.inputFormatters, this.validator, this.shouldValidate = true, this.prefixIcon, this.textCapitalization = TextCapitalization.none}) : super(key: key);
+  const CTextFormField({Key? key, required this.controller, required this.type, this.onChanged, required this.label, this.inputFormatters, this.validator, this.shouldValidate = true, this.prefixIcon, this.textCapitalization = TextCapitalization.none, this.readOnly = false}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return TextFormField(
       controller: controller,
+      readOnly: readOnly,
       textCapitalization: textCapitalization,
       keyboardType: type,
       onChanged: (value) => onChanged != null ? onChanged!(value) : null,
