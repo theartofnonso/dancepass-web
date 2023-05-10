@@ -7,9 +7,10 @@ class CTextFormField extends StatelessWidget {
   final TextInputType type;
   final Function? onChanged;
   final Function? validator;
+  final bool shouldValidate;
   final List<TextInputFormatter>? inputFormatters;
 
-  const CTextFormField({Key? key, required this.controller, required this.type, this.onChanged, required this.label, this.inputFormatters, this.validator}) : super(key: key);
+  const CTextFormField({Key? key, required this.controller, required this.type, this.onChanged, required this.label, this.inputFormatters, this.validator, this.shouldValidate = true}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -22,11 +23,13 @@ class CTextFormField extends StatelessWidget {
         hintText: label,
       ),
       validator: (value) {
-        if (validator != null) {
-          return validator!();
-        }
-        if (value == null || value.isEmpty) {
-          return '$label has not been provided';
+        if(shouldValidate) {
+          if (validator != null) {
+            return validator!();
+          }
+          if (value == null || value.isEmpty) {
+            return '$label has not been provided';
+          }
         }
         return null;
       },

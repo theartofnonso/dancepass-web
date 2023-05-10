@@ -12,8 +12,6 @@ import 'package:intl/intl_browser.dart';
 
 import 'form_field.dart';
 
-import 'amplifyconfiguration.dart';
-
 void main() async {
   findSystemLocale();
 
@@ -109,6 +107,7 @@ class _MyHomePageState extends State<MyHomePage> {
   static const start = "START";
   static const end = "END";
 
+  final TextEditingController _eventIdController = TextEditingController();
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _venueController = TextEditingController();
@@ -135,6 +134,8 @@ class _MyHomePageState extends State<MyHomePage> {
 
   DateTime _selectedEndDate = DateTime.now();
   TimeOfDay _selectedEndTime = TimeOfDay.now();
+
+  String? _eventId;
 
   Future<void> _selectDate({required DateTime date, required period}) async {
     final picked = await showDatePicker(context: context, initialDate: DateTime.now(), firstDate: DateTime.now(), lastDate: DateTime.now().add(const Duration(days: 365)));
@@ -262,27 +263,23 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Future<void> _onCreateEventDraft(String eventId) async {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: const Text("Event has been drafted"),
-      action: SnackBarAction(
-        label: 'Go Live', // or some operation you would like
-        onPressed: () async {
-          await _postLiveEvent(eventId);
-        },
-      ),
-    ));
+    setState(() {
+      _eventId = eventId;
+    });
+    _showGoLiveBanner(message: "Event is draft, do you want to go live now");
   }
 
-  Future<void> _postLiveEvent(String eventId) async {
+  Future<void> _postLiveEvent() async {
     final payload = {
       "status": "LIVE",
     };
     final jsonPayload = jsonEncode(payload);
     try {
-      final isLive = await HttpFunctions.postLiveEvent(path: eventId, payload: jsonPayload);
+      final isLive = await HttpFunctions.postLiveEvent(path: _eventId, payload: jsonPayload);
       if (isLive) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Event is no live on Dancepass")));
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Event is now live on Dancepass")));
+          ScaffoldMessenger.of(context).hideCurrentMaterialBanner();
         }
       } else {
         if (mounted) {
@@ -444,9 +441,38 @@ class _MyHomePageState extends State<MyHomePage> {
     return null;
   }
 
+  void _showGoLiveBanner({required String message}) {
+    ScaffoldMessenger.of(context).showMaterialBanner(
+      MaterialBanner(
+        padding: const EdgeInsets.all(10),
+        content: Text(message, style: const TextStyle(color: Colors.white)),
+        backgroundColor: Colors.black,
+        actions: <Widget>[
+          TextButton(
+            onPressed: () {
+              ScaffoldMessenger.of(context).hideCurrentMaterialBanner();
+            },
+            child: const Text(
+              'DISMISS',
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+          TextButton(
+            onPressed: () => _postLiveEvent(),
+            child: const Text(
+              'GO LIVE',
+              style: TextStyle(color: Colors.white),
+            ),
+          )
+        ],
+      ),
+    );
+  }
+
   @override
   void dispose() {
     super.dispose();
+    _eventIdController.dispose();
     _nameController.dispose();
     _descriptionController.dispose();
     _venueController.dispose();
@@ -493,6 +519,36 @@ class _MyHomePageState extends State<MyHomePage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: <Widget>[
+                    FormFieldContainer(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text("Please provide an existing id to update an event", style: TextStyle(fontWeight: FontWeight.bold),),
+                          const SizedBox(
+                            height: 10,
+                          ),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: CTextFormField(
+                                  controller: _eventIdController,
+                                  shouldValidate: false,
+                                  type: TextInputType.name,
+                                  label: 'Event Id',
+                                ),
+                              ),
+                              const SizedBox(
+                                width: 10,
+                              ),
+                              ElevatedButton(onPressed: () {}, child: const Icon(Icons.search),)
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(
+                      height: 15,
+                    ),
                     CTextFormField(
                       controller: _nameController,
                       type: TextInputType.name,
@@ -766,6 +822,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                     Expanded(
                                       child: CTextFormField(
                                         controller: _lineupFormControllers[index],
+                                        shouldValidate: false,
                                         type: TextInputType.text,
                                         label: 'Lineup field ${index + 1}',
                                       ),
@@ -835,6 +892,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                         controller: _timelineDescriptionControllers[index],
                                         type: TextInputType.text,
                                         label: 'Timeline field ${index + 1}',
+                                        shouldValidate: false,
                                         onChanged: (_) {
                                           _setTimelineSummary(index, _timelineDescriptionControllers[index].text, _timelineTimes[index]);
                                         },
