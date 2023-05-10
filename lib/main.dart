@@ -192,10 +192,16 @@ class _MyHomePageState extends State<MyHomePage> {
       initialTime: _timelineTimes[index],
     );
     if (pickedTime != null) {
-      setState(() {
-        _timelineTimes[index] = pickedTime;
-        _setTimelineSummary(index, _timelineDescriptionControllers[index].text, _timelineTimes[index]);
-      });
+      if(pickedTime.hour >= _selectedStartTime.hour) {
+        setState(() {
+          _timelineTimes[index] = pickedTime;
+          _setTimelineSummary(index, _timelineDescriptionControllers[index].text, _timelineTimes[index]);
+        });
+      } else {
+        if(mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Timeline can't start before event start date")));
+        }
+      }
     }
   }
 
