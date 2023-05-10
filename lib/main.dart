@@ -889,6 +889,11 @@ class _MyHomePageState extends State<MyHomePage> {
                                       child: CTextFormField(
                                         controller: _genreFormControllers[index],
                                         type: TextInputType.text,
+                                        prefixIcon: const Icon(
+                                          Icons.music_note_outlined,
+                                          color: Colors.grey,
+                                          size: 16,
+                                        ),
                                         label: 'Genre field ${index + 1}',
                                       ),
                                     ),
@@ -920,6 +925,11 @@ class _MyHomePageState extends State<MyHomePage> {
                         CTextFormField(
                           controller: _venueController,
                           type: TextInputType.streetAddress,
+                          prefixIcon: const Icon(
+                            Icons.maps_home_work_outlined,
+                            color: Colors.grey,
+                            size: 16,
+                          ),
                           label: 'Venue',
                         ),
                         const SizedBox(
@@ -943,6 +953,11 @@ class _MyHomePageState extends State<MyHomePage> {
                         CTextFormField(
                             controller: _postcodeController,
                             type: TextInputType.streetAddress,
+                            prefixIcon: const Icon(
+                              Icons.maps_home_work_outlined,
+                              color: Colors.grey,
+                              size: 16,
+                            ),
                             label: 'Postcode',
                             onChanged: (value) {
                               if (value != null) {
@@ -955,6 +970,11 @@ class _MyHomePageState extends State<MyHomePage> {
                         CTextFormField(
                             controller: _addressController,
                             type: TextInputType.streetAddress,
+                            prefixIcon: const Icon(
+                              Icons.maps_home_work_outlined,
+                              color: Colors.grey,
+                              size: 16,
+                            ),
                             label: 'Address',
                             onChanged: (value) {
                               if (value != null) {
@@ -1041,6 +1061,11 @@ class _MyHomePageState extends State<MyHomePage> {
                     CTextFormField(
                       controller: _hostController,
                       type: TextInputType.name,
+                      prefixIcon: const Icon(
+                        Icons.verified_outlined,
+                        color: Colors.grey,
+                        size: 16,
+                      ),
                       label: 'Host',
                     ),
                     const SizedBox(
@@ -1133,7 +1158,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                         shouldValidate: false,
                                         type: TextInputType.text,
                                         prefixIcon: const Icon(
-                                          Icons.person,
+                                          Icons.perm_identity_rounded,
                                           color: Colors.grey,
                                           size: 16,
                                         ),
@@ -1205,6 +1230,11 @@ class _MyHomePageState extends State<MyHomePage> {
                                         controller: _timelineDescriptionControllers[index],
                                         type: TextInputType.text,
                                         label: 'Timeline field ${index + 1}',
+                                        prefixIcon: const Icon(
+                                          Icons.timeline_rounded,
+                                          color: Colors.grey,
+                                          size: 16,
+                                        ),
                                         shouldValidate: false,
                                         onChanged: (_) {
                                           _setTimelineSummary(index, _timelineDescriptionControllers[index].text, _timelineTimes[index]);
@@ -1214,8 +1244,8 @@ class _MyHomePageState extends State<MyHomePage> {
                                     const SizedBox(
                                       width: 8,
                                     ),
-                                    GestureDetector(
-                                        onTap: () => _selectTimelinePeriod(index),
+                                    ElevatedButton(
+                                        onPressed: () => _selectTimelinePeriod(index),
                                         child: const Icon(
                                           Icons.access_time_outlined,
                                           size: 18,
