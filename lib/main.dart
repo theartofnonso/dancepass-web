@@ -710,12 +710,9 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
+
+    final selectedBannerUrl = _selectedBannerUrl;
+
     return Scaffold(
         backgroundColor: Colors.grey.shade50,
         body: SingleChildScrollView(
@@ -1046,12 +1043,18 @@ class _MyHomePageState extends State<MyHomePage> {
                         SizedBox(
                           width: 240,
                           height: 240,
-                          child: Image.network(
-                            _selectedBannerUrl ?? "",
-                            width: 240,
-                            height: 240,
-                            fit: BoxFit.fill,
-                          ),
+                          child: selectedBannerUrl != null
+                              ? Image.network(
+                                  selectedBannerUrl,
+                                  width: 240,
+                                  height: 240,
+                                  fit: BoxFit.fill,
+                                )
+                              : Container(
+                                  width: 240,
+                                  height: 240,
+                                  color: Colors.grey,
+                                ),
                         )
                       ],
                     ),
