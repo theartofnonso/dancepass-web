@@ -93,11 +93,10 @@ class MyHomePage extends StatefulWidget {
 
 enum EventOperationType { create, update }
 
+enum EventDateTimePeriod { start, end }
+
 class _MyHomePageState extends State<MyHomePage> {
   final _formKey = GlobalKey<FormState>();
-
-  static const start = "START";
-  static const end = "END";
 
   final TextEditingController _eventIdController = TextEditingController();
   final TextEditingController _nameController = TextEditingController();
@@ -129,19 +128,21 @@ class _MyHomePageState extends State<MyHomePage> {
   DateTime _selectedEndDate = DateTime.now();
   TimeOfDay _selectedEndTime = TimeOfDay.now();
 
-  String? _eventId;
   Event? _event;
 
   Future<void> _selectDate({required DateTime date, required period}) async {
-    final picked = await showDatePicker(context: context, initialDate: DateTime.now(), firstDate: DateTime.now(), lastDate: DateTime.now().add(const Duration(days: 365)));
+    DateTime? dateTime = period == EventDateTimePeriod.start ? _event?.startDateTime : _event?.endDateTime;
+    var initialTime = dateTime ?? DateTime.now();
+
+    final picked = await showDatePicker(context: context, initialDate: initialTime, firstDate: DateTime.now(), lastDate: DateTime.now().add(const Duration(days: 365)));
     if (picked != null && picked != date) {
       switch (period) {
-        case start:
+        case EventDateTimePeriod.start:
           setState(() {
             _selectedStartDate = picked;
           });
           break;
-        case end:
+        case EventDateTimePeriod.end:
           setState(() {
             _selectedEndDate = picked;
           });
@@ -153,7 +154,12 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Future<void> _selectTime({required TimeOfDay timeOfDay, required period}) async {
-    final picked = await showTimePicker(context: context, initialTime: TimeOfDay.now());
+    DateTime? dateTime = period == EventDateTimePeriod.start ? _event?.startDateTime : _event?.endDateTime;
+    var initialTime = TimeOfDay.now();
+    if (dateTime != null) {
+      initialTime = TimeOfDay.fromDateTime(dateTime);
+    }
+    final picked = await showTimePicker(context: context, initialTime: initialTime);
     if (picked != null && picked != timeOfDay) {
       switch (period) {
         case "START":
@@ -219,7 +225,7 @@ class _MyHomePageState extends State<MyHomePage> {
         if (event != null) {
           _event = event;
           _updateFormWithEvent(event);
-          if(event.status == "DRAFTED") {
+          if (event.status == "DRAFTED") {
             _showGoLiveBanner();
           }
         } else {
@@ -338,7 +344,7 @@ class _MyHomePageState extends State<MyHomePage> {
       setState(() {
         _eventIdController.text = createdEventId;
       });
-      _onCreateEventDraft(createdEventId);
+      _showGoLiveBanner();
     } else {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(errorMessage)));
@@ -362,12 +368,6 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
-  bool newDateIsAfterOldDate() {
-    DateTime oldStartDatetime = _event!.startDateTime;
-    DateTime newStartDatetime = _getStartDateTime();
-    return newStartDatetime.isAfter(oldStartDatetime);
-  }
-
   Future<void> _submit({required String progressMessage, required String errorMessage, required EventOperationType type}) async {
     final currentState = _formKey.currentState;
     if (currentState != null) {
@@ -375,25 +375,22 @@ class _MyHomePageState extends State<MyHomePage> {
         if (_isDateValid()) {
           final payload = _createPayload();
 
-          _showProgressDialog(message: progressMessage);
-
           try {
             if (_eventIdController.text.isNotEmpty) {
               switch (type) {
                 case EventOperationType.create:
-                  if (newDateIsAfterOldDate()) {
-                    _runCreateOperation(payload: payload, errorMessage: errorMessage);
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("New start date must be before end old start date")));
-                  }
+                  _showProgressDialog(message: progressMessage);
+                  _runCreateOperation(payload: payload, errorMessage: errorMessage);
                   break;
                 case EventOperationType.update:
+                  _showProgressDialog(message: progressMessage);
                   _runUpdateOperation(id: _eventIdController.text, payload: payload, errorMessage: errorMessage);
                   break;
                 default:
                   throw Exception("Invalid EventOperationType");
               }
             } else {
+              _showProgressDialog(message: progressMessage);
               _runCreateOperation(payload: payload, errorMessage: errorMessage);
             }
           } catch (e) {
@@ -407,15 +404,7 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
-  Future<void> _onCreateEventDraft(String eventId) async {
-    setState(() {
-      _eventId = eventId;
-    });
-    _showGoLiveBanner();
-  }
-
   Future<void> _postLiveEvent() async {
-
     final payload = {
       "status": "LIVE",
     };
@@ -526,10 +515,10 @@ class _MyHomePageState extends State<MyHomePage> {
     String summary;
 
     switch (period) {
-      case start:
+      case EventDateTimePeriod.start:
         summary = "Starting on";
         break;
-      case end:
+      case EventDateTimePeriod.end:
         summary = "Ending on";
         break;
       default:
@@ -543,10 +532,10 @@ class _MyHomePageState extends State<MyHomePage> {
     String summary;
 
     switch (period) {
-      case start:
+      case EventDateTimePeriod.start:
         summary = "Starting at";
         break;
-      case end:
+      case EventDateTimePeriod.end:
         summary = "Ending at";
         break;
       default:
@@ -682,7 +671,10 @@ class _MyHomePageState extends State<MyHomePage> {
             child: ListView(
               children: [
                 ListTile(
-                  onTap: () => _submit(progressMessage: 'Updating ${_nameController.text}', errorMessage: 'Unable to update ${_nameController.text}', type: EventOperationType.update),
+                  onTap: () {
+                    Navigator.of(context, rootNavigator: true).pop();
+                    _submit(progressMessage: 'Updating ${_nameController.text}', errorMessage: 'Unable to update ${_nameController.text}', type: EventOperationType.update);
+                  },
                   leading: const Icon(Icons.edit),
                   title: Text(
                     'Update "${_nameController.text}"',
@@ -695,10 +687,13 @@ class _MyHomePageState extends State<MyHomePage> {
                   trailing: const Icon(Icons.arrow_forward_ios_rounded),
                 ),
                 ListTile(
-                  onTap: () => _submit(
-                      progressMessage: 'Creating new event draft from "${_nameController.text}"',
-                      errorMessage: 'Unable to create new event draft from "${_nameController.text}"',
-                      type: EventOperationType.create),
+                  onTap: () {
+                    Navigator.of(context, rootNavigator: true).pop();
+                    _submit(
+                        progressMessage: 'Creating new event draft from "${_nameController.text}"',
+                        errorMessage: 'Unable to create new event draft from "${_nameController.text}"',
+                        type: EventOperationType.create);
+                  },
                   leading: const Icon(Icons.add_circle_outline_outlined),
                   title: Text(
                     'Create new event from "${_nameController.text}"',
@@ -798,7 +793,9 @@ class _MyHomePageState extends State<MyHomePage> {
                       children: [
                         Row(
                           children: [
-                            DateAndTime(onSelect: () => _selectDate(date: _selectedStartDate, period: start), label: _displayDate(rawDateTime: _selectedStartDate, period: start)),
+                            DateAndTime(
+                                onSelect: () => _selectDate(date: _selectedStartDate, period: EventDateTimePeriod.start),
+                                label: _displayDate(rawDateTime: _selectedStartDate, period: EventDateTimePeriod.start)),
                             const Padding(
                               padding: EdgeInsets.all(8.0),
                               child: Icon(
@@ -806,7 +803,9 @@ class _MyHomePageState extends State<MyHomePage> {
                                 size: 18,
                               ),
                             ),
-                            DateAndTime(onSelect: () => _selectDate(date: _selectedEndDate, period: end), label: _displayDate(rawDateTime: _selectedEndDate, period: end)),
+                            DateAndTime(
+                                onSelect: () => _selectDate(date: _selectedEndDate, period: EventDateTimePeriod.end),
+                                label: _displayDate(rawDateTime: _selectedEndDate, period: EventDateTimePeriod.end)),
                           ],
                         ),
                         const SizedBox(
@@ -814,7 +813,9 @@ class _MyHomePageState extends State<MyHomePage> {
                         ),
                         Row(
                           children: [
-                            DateAndTime(onSelect: () => _selectTime(timeOfDay: _selectedStartTime, period: start), label: _displayTime(rawTimeOfDay: _selectedStartTime, period: start)),
+                            DateAndTime(
+                                onSelect: () => _selectTime(timeOfDay: _selectedStartTime, period: EventDateTimePeriod.start),
+                                label: _displayTime(rawTimeOfDay: _selectedStartTime, period: EventDateTimePeriod.start)),
                             const Padding(
                               padding: EdgeInsets.all(8.0),
                               child: Icon(
@@ -822,7 +823,9 @@ class _MyHomePageState extends State<MyHomePage> {
                                 size: 18,
                               ),
                             ),
-                            DateAndTime(onSelect: () => _selectTime(timeOfDay: _selectedEndTime, period: end), label: _displayTime(rawTimeOfDay: _selectedEndTime, period: end)),
+                            DateAndTime(
+                                onSelect: () => _selectTime(timeOfDay: _selectedEndTime, period: EventDateTimePeriod.end),
+                                label: _displayTime(rawTimeOfDay: _selectedEndTime, period: EventDateTimePeriod.end)),
                           ],
                         )
                       ],
