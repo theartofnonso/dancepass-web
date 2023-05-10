@@ -140,12 +140,12 @@ class _MyHomePageState extends State<MyHomePage> {
     final picked = await showDatePicker(context: context, initialDate: DateTime.now(), firstDate: DateTime.now(), lastDate: DateTime.now().add(const Duration(days: 365)));
     if (picked != null && picked != date) {
       switch (period) {
-        case "START":
+        case start:
           setState(() {
             _selectedStartDate = picked;
           });
           break;
-        case "END":
+        case end:
           setState(() {
             _selectedEndDate = picked;
           });
@@ -537,7 +537,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         ),
                         Row(
                           children: [
-                            DateAndTime(onSelect: () => _selectTime(timeOfDay: _selectedStartTime, period: end), label: _displayTime(rawTimeOfDay: _selectedStartTime, period: start)),
+                            DateAndTime(onSelect: () => _selectTime(timeOfDay: _selectedStartTime, period: start), label: _displayTime(rawTimeOfDay: _selectedStartTime, period: start)),
                             const Padding(
                               padding: EdgeInsets.all(8.0),
                               child: Icon(
