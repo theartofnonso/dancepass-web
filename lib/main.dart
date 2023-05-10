@@ -1053,7 +1053,7 @@ class _MyHomePageState extends State<MyHomePage> {
                               : Container(
                                   width: 240,
                                   height: 240,
-                                  color: Colors.grey,
+                                  color: Colors.grey.shade400,
                                 ),
                         )
                       ],
