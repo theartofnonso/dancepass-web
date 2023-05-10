@@ -718,8 +718,8 @@ class _MyHomePageState extends State<MyHomePage> {
     // than having to individually change instances of widgets.
     return Scaffold(
         backgroundColor: Colors.grey.shade50,
-        body: Center(
-          child: SingleChildScrollView(
+        body: SingleChildScrollView(
+          child: Center(
             child: Container(
               width: 700,
               padding: const EdgeInsets.all(20.0),
