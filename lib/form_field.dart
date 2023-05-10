@@ -8,9 +8,10 @@ class CTextFormField extends StatelessWidget {
   final Function? onChanged;
   final Function? validator;
   final bool shouldValidate;
+  final Widget? prefixIcon;
   final List<TextInputFormatter>? inputFormatters;
 
-  const CTextFormField({Key? key, required this.controller, required this.type, this.onChanged, required this.label, this.inputFormatters, this.validator, this.shouldValidate = true}) : super(key: key);
+  const CTextFormField({Key? key, required this.controller, required this.type, this.onChanged, required this.label, this.inputFormatters, this.validator, this.shouldValidate = true, this.prefixIcon}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -21,6 +22,7 @@ class CTextFormField extends StatelessWidget {
       inputFormatters: inputFormatters,
       decoration: InputDecoration(
         hintText: label,
+        prefixIcon: prefixIcon
       ),
       validator: (value) {
         if(shouldValidate) {

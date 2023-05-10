@@ -9,6 +9,7 @@ import 'package:flutter/services.dart';
 import 'package:intl/date_symbol_data_local.dart' as date_formatter;
 import 'package:intl/intl.dart';
 import 'package:intl/intl_browser.dart';
+import 'package:dancepassweb/dotos/event.dart';
 
 import 'form_field.dart';
 
@@ -113,21 +114,23 @@ class _MyHomePageState extends State<MyHomePage> {
   final TextEditingController _venueController = TextEditingController();
   final TextEditingController _postcodeController = TextEditingController();
   final TextEditingController _addressController = TextEditingController();
+  final TextEditingController _latitudeController = TextEditingController();
+  final TextEditingController _longitudeController = TextEditingController();
   final TextEditingController _bannerUrlController = TextEditingController();
   final TextEditingController _hostController = TextEditingController();
   final TextEditingController _ticketPriceController = TextEditingController();
   final TextEditingController _ticketUrlController = TextEditingController();
 
   String _selectedCity = EventData.cities.first;
-  final List<String> _selectedCategories = [...EventData.eventCategories.take(1)];
+  List<String> _selectedCategories = [...EventData.eventCategories.take(1)];
 
   String? _selectedBannerUrl;
 
-  final List<TextEditingController> _genreFormControllers = [TextEditingController()];
-  final List<TextEditingController> _lineupFormControllers = [TextEditingController()];
-  final List<TextEditingController> _timelineDescriptionControllers = [TextEditingController()];
-  final List<TimeOfDay> _timelineTimes = [TimeOfDay.now()];
-  final List<String> _timelineSummaries = ["event at 17:30"];
+  List<TextEditingController> _genreFormControllers = [TextEditingController()];
+  List<TextEditingController> _lineupFormControllers = [TextEditingController()];
+  List<TextEditingController> _timelineDescriptionControllers = [TextEditingController()];
+  List<TimeOfDay> _timelineTimes = [TimeOfDay.now()];
+  List<String> _timelineSummaries = [""];
 
   DateTime _selectedStartDate = DateTime.now();
   TimeOfDay _selectedStartTime = TimeOfDay.now();
@@ -216,6 +219,61 @@ class _MyHomePageState extends State<MyHomePage> {
     return startDateTime.isBefore(endDateTime);
   }
 
+  Future<void> _getEvent() async {
+    HttpFunctions.getEvent(id: _eventIdController.text).then((event) {
+      if (event != null) {
+        _updateFormWithEvent(event);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("We can't find this event")));
+      }
+    }).catchError((e) {
+      print(e);
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Something went wrong on our end... We are fixing it")));
+    });
+  }
+
+  void _updateFormWithEvent(Event event) {
+    setState(() {
+      _nameController.text = event.name;
+      _descriptionController.text = event.description;
+      _selectedCategories = event.category;
+      _genreFormControllers = event.genre.map((genre) => TextEditingController(text: genre)).toList();
+      _selectedStartDate = event.startDateTime;
+      _selectedStartTime = TimeOfDay.fromDateTime(event.startDateTime);
+      _selectedEndDate = event.endDateTime;
+      _selectedEndTime = TimeOfDay.fromDateTime(event.endDateTime);
+      _selectedCategories = event.category;
+      _venueController.text = event.venue;
+      _selectedCity = event.city;
+      _postcodeController.text = event.postcode;
+      _addressController.text = event.address;
+      _latitudeController.text = event.latitude.toString();
+      _longitudeController.text = event.longitude.toString();
+      _bannerUrlController.text = event.bannerUrl;
+      _hostController.text = event.hostName;
+      _ticketPriceController.text = event.ticketPrice.toString();
+      _ticketUrlController.text = event.ticketsUrl.toString();
+      _lineupFormControllers = event.lineup.map((artist) => TextEditingController(text: artist)).toList();
+
+      List<TextEditingController> timelineDescriptionControllers = [];
+      List<TimeOfDay> timelineTimes = [];
+      List<String> timelineSummaries = [];
+      for (int i = 0; i < event.timeline.length; i++) {
+        final timeline = jsonDecode(event.timeline[i]);
+        final description = timeline["description"];
+        final datetime = DateTime.parse(timeline["time"]);
+        final timeOfDay = TimeOfDay.fromDateTime(DateTime.parse(timeline["time"]));
+        final controller = TextEditingController(text: description);
+        timelineDescriptionControllers.add(controller);
+        timelineTimes.add(timeOfDay);
+        timelineSummaries.add("$description at ${DateFormat("Hm", "en").format(datetime)}");
+      }
+      _timelineDescriptionControllers = timelineDescriptionControllers;
+      _timelineTimes = _timelineTimes;
+      _timelineSummaries = timelineSummaries;
+    });
+  }
+
   Future<void> _createEvent() async {
     final currentState = _formKey.currentState;
     if (currentState != null) {
@@ -233,6 +291,8 @@ class _MyHomePageState extends State<MyHomePage> {
             "country": "UK",
             "postcode": _postcodeController.text,
             "address": _addressController.text,
+            "latitude": _latitudeController.text,
+            "longitude": _longitudeController.text,
             "bannerUrl": _bannerUrlController.text,
             "hostName": _hostController.text,
             "lineup": _lineupFormControllers.map((controller) => controller.text).toList(),
@@ -275,7 +335,7 @@ class _MyHomePageState extends State<MyHomePage> {
     };
     final jsonPayload = jsonEncode(payload);
     try {
-      final isLive = await HttpFunctions.postLiveEvent(path: _eventId, payload: jsonPayload);
+      final isLive = await HttpFunctions.updateEvent(path: _eventId, payload: jsonPayload);
       if (isLive) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Event is now live on Dancepass")));
@@ -326,7 +386,7 @@ class _MyHomePageState extends State<MyHomePage> {
   void _addTimeline() {
     _addTimelineDescriptionFormField();
     _addTimelineTime();
-    _timelineSummaries.add("Event at 17:30");
+    _timelineSummaries.add("");
   }
 
   void _removeTimeline(int index) {
@@ -441,6 +501,27 @@ class _MyHomePageState extends State<MyHomePage> {
     return null;
   }
 
+  void _getGeoCoordinates() {
+    final venue = _venueController.text;
+    final streetAddress = _addressController.text;
+    final postcode = _postcodeController.text;
+
+    if (venue.isNotEmpty && streetAddress.isNotEmpty && postcode.isNotEmpty) {
+      final firstLine = [streetAddress, _selectedCity].join(", ");
+
+      final address = '$firstLine $postcode';
+
+      HttpFunctions.addressToGeoCoordinates(address).then((coordinates) {
+        setState(() {
+          _latitudeController.text = coordinates.latitude.toString();
+          _longitudeController.text = coordinates.longitude.toString();
+        });
+      }).catchError((_) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Unable to find $venue coordinates")));
+      });
+    }
+  }
+
   void _showGoLiveBanner({required String message}) {
     ScaffoldMessenger.of(context).showMaterialBanner(
       MaterialBanner(
@@ -478,6 +559,8 @@ class _MyHomePageState extends State<MyHomePage> {
     _venueController.dispose();
     _postcodeController.dispose();
     _addressController.dispose();
+    _latitudeController.dispose();
+    _longitudeController.dispose();
     _bannerUrlController.dispose();
     _hostController.dispose();
     _ticketPriceController.dispose();
@@ -523,7 +606,10 @@ class _MyHomePageState extends State<MyHomePage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text("Please provide an existing id to update an event", style: TextStyle(fontWeight: FontWeight.bold),),
+                          const Text(
+                            "Please provide an existing id to update an event",
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
                           const SizedBox(
                             height: 10,
                           ),
@@ -540,7 +626,12 @@ class _MyHomePageState extends State<MyHomePage> {
                               const SizedBox(
                                 width: 10,
                               ),
-                              ElevatedButton(onPressed: () {}, child: const Icon(Icons.search),)
+                              ElevatedButton(
+                                onPressed: () {
+                                  _getEvent();
+                                },
+                                child: const Icon(Icons.search),
+                              )
                             ],
                           ),
                         ],
@@ -562,7 +653,6 @@ class _MyHomePageState extends State<MyHomePage> {
                       controller: _descriptionController,
                       maxLines: 10,
                       decoration: const InputDecoration(hintText: "Description", border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(3)))),
-                      onChanged: (value) {},
                       validator: (value) {
                         if (value == null || value.isEmpty) {
                           return 'Description has not been provided';
@@ -682,47 +772,89 @@ class _MyHomePageState extends State<MyHomePage> {
                     const SizedBox(
                       height: 20,
                     ),
-                    CTextFormField(
-                      controller: _venueController,
-                      type: TextInputType.streetAddress,
-                      label: 'Venue',
-                    ),
-                    const SizedBox(
-                      height: 20,
-                    ),
-                    DropdownButtonFormField(
-                      value: _selectedCity,
-                      items: _citiesToDropdown(),
-                      onChanged: (value) {
-                        if (value != null) {
-                          setState(() {
-                            _selectedCity = value;
-                          });
-                        }
-                      },
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'City has not been provided';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(
-                      height: 20,
-                    ),
-                    CTextFormField(
-                      controller: _postcodeController,
-                      type: TextInputType.streetAddress,
-                      label: 'Postcode',
-                    ),
-                    const SizedBox(
-                      height: 20,
-                    ),
-                    CTextFormField(
-                      controller: _addressController,
-                      type: TextInputType.streetAddress,
-                      label: 'Address',
-                    ),
+                    FormFieldContainer(
+                        child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          "Where will this event be located",
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(
+                          height: 10,
+                        ),
+                        CTextFormField(
+                          controller: _venueController,
+                          type: TextInputType.streetAddress,
+                          label: 'Venue',
+                        ),
+                        const SizedBox(
+                          height: 20,
+                        ),
+                        DropdownButtonFormField(
+                          value: _selectedCity,
+                          items: _citiesToDropdown(),
+                          onChanged: (value) {
+                            if (value != null) {
+                              setState(() {
+                                _selectedCity = value;
+                              });
+                              _getGeoCoordinates();
+                            }
+                          },
+                        ),
+                        const SizedBox(
+                          height: 20,
+                        ),
+                        CTextFormField(
+                            controller: _postcodeController,
+                            type: TextInputType.streetAddress,
+                            label: 'Postcode',
+                            onChanged: (value) {
+                              if (value != null) {
+                                _getGeoCoordinates();
+                              }
+                            }),
+                        const SizedBox(
+                          height: 20,
+                        ),
+                        CTextFormField(
+                            controller: _addressController,
+                            type: TextInputType.streetAddress,
+                            label: 'Address',
+                            onChanged: (value) {
+                              if (value != null) {
+                                _getGeoCoordinates();
+                              }
+                            }),
+                        const SizedBox(
+                          height: 20,
+                        ),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: CTextFormField(
+                                controller: _latitudeController,
+                                type: TextInputType.number,
+                                prefixIcon: const Icon(Icons.location_on, color: Colors.grey, size: 16,),
+                                label: 'Latitude',
+                              ),
+                            ),
+                            const SizedBox(
+                              width: 10,
+                            ),
+                            Expanded(
+                              child: CTextFormField(
+                                controller: _longitudeController,
+                                type: TextInputType.number,
+                                prefixIcon: const Icon(Icons.location_on, color: Colors.grey, size: 16,),
+                                label: 'Longitude',
+                              ),
+                            ),
+                          ],
+                        )
+                      ],
+                    )),
                     const SizedBox(
                       height: 20,
                     ),
@@ -734,6 +866,7 @@ class _MyHomePageState extends State<MyHomePage> {
                               controller: _bannerUrlController,
                               type: TextInputType.url,
                               label: 'Banner Url',
+                              prefixIcon: const Icon(Icons.link, color: Colors.grey, size: 16,),
                               onChanged: (value) {
                                 setState(() {
                                   _selectedBannerUrl = _bannerUrlController.text;
@@ -764,13 +897,22 @@ class _MyHomePageState extends State<MyHomePage> {
                     const SizedBox(
                       height: 20,
                     ),
-                    CTextFormField(controller: _ticketPriceController, type: TextInputType.number, label: 'Ticket price', inputFormatters: [
-                      FilteringTextInputFormatter.allow(RegExp("[^a-zA-Z\\-]+")),
-                    ]),
-                    const SizedBox(
-                      height: 20,
+                    Row(
+                      children: [
+                        SizedBox(
+                          width: 200,
+                          child: CTextFormField(controller: _ticketPriceController, type: TextInputType.number, prefixIcon: const Icon(Icons.attach_money_outlined, color: Colors.grey, size: 16,), label: 'Ticket price', inputFormatters: [
+                            FilteringTextInputFormatter.allow(RegExp("[^a-zA-Z\\-]+")),
+                          ]),
+                        ),
+                        const SizedBox(
+                          width: 10,
+                        ),
+                        Expanded(
+                            child: CTextFormField(
+                                controller: _ticketUrlController, prefixIcon: const Icon(Icons.link, color: Colors.grey, size: 16,), type: TextInputType.url, label: 'Ticket url', validator: () => _validateUrl(url: _ticketUrlController.text, label: "Ticket url"))),
+                      ],
                     ),
-                    CTextFormField(controller: _ticketUrlController, type: TextInputType.url, label: 'Ticket url', validator: () => _validateUrl(url: _ticketUrlController.text, label: "Ticket url")),
                     const SizedBox(
                       height: 20,
                     ),
@@ -824,7 +966,8 @@ class _MyHomePageState extends State<MyHomePage> {
                                         controller: _lineupFormControllers[index],
                                         shouldValidate: false,
                                         type: TextInputType.text,
-                                        label: 'Lineup field ${index + 1}',
+                                        prefixIcon: const Icon(Icons.person, color: Colors.grey, size: 16,),
+                                        label: 'Artist field ${index + 1}',
                                       ),
                                     ),
                                   ],
