@@ -37,8 +37,8 @@ class HttpFunctions {
     return event;
   }
 
-  static Future<bool> updateEvent({String? path, required String payload}) async {
-    final url = Uri.parse("$eventsEndpoint/$path");
+  static Future<bool> updateEvent({required String id, required String payload}) async {
+    final url = Uri.parse("$eventsEndpoint/$id");
     final response = await http.post(url, body: payload);
     return response.statusCode == 200;
   }

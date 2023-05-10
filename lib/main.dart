@@ -91,6 +91,8 @@ class MyHomePage extends StatefulWidget {
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
+enum EventOperationType { create, update }
+
 class _MyHomePageState extends State<MyHomePage> {
   final _formKey = GlobalKey<FormState>();
 
@@ -128,6 +130,7 @@ class _MyHomePageState extends State<MyHomePage> {
   TimeOfDay _selectedEndTime = TimeOfDay.now();
 
   String? _eventId;
+  Event? _event;
 
   Future<void> _selectDate({required DateTime date, required period}) async {
     final picked = await showDatePicker(context: context, initialDate: DateTime.now(), firstDate: DateTime.now(), lastDate: DateTime.now().add(const Duration(days: 365)));
@@ -209,16 +212,52 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Future<void> _getEvent() async {
-    HttpFunctions.getEvent(id: _eventIdController.text).then((event) {
-      if (event != null) {
-        _updateFormWithEvent(event);
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("We can't find this event")));
-      }
-    }).catchError((e) {
-      print(e);
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Something went wrong on our end... We are fixing it")));
-    });
+    if (_eventIdController.text.isNotEmpty) {
+      _showProgressDialog(message: "Searching for event");
+      HttpFunctions.getEvent(id: _eventIdController.text).then((event) {
+        Navigator.of(context, rootNavigator: true).pop();
+        if (event != null) {
+          _event = event;
+          _updateFormWithEvent(event);
+          if(event.status == "DRAFTED") {
+            _showGoLiveBanner();
+          }
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("We can't find this event")));
+        }
+      }).catchError((e) {
+        Navigator.of(context, rootNavigator: true).pop();
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Something went wrong on our end... We are fixing it")));
+      });
+    }
+  }
+
+  void _showProgressDialog({required String message}) {
+    showDialog(
+      context: context,
+      barrierDismissible: false, // Prevents dialog dismissal on tap outside
+      builder: (_) {
+        return Dialog(
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white, // Optional: Set a custom background color for the content
+              borderRadius: BorderRadius.circular(8.0),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const CircularProgressIndicator(), // Display the progress bar
+                  const SizedBox(height: 16.0),
+                  Text(message), // Optional: Add a message
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 
   void _updateFormWithEvent(Event event) {
@@ -239,6 +278,7 @@ class _MyHomePageState extends State<MyHomePage> {
       _latitudeController.text = event.latitude.toString();
       _longitudeController.text = event.longitude.toString();
       _bannerUrlController.text = event.bannerUrl;
+      _selectedBannerUrl = event.bannerUrl;
       _hostController.text = event.hostName;
       _ticketPriceController.text = event.ticketPrice.toString();
       _ticketUrlController.text = event.ticketsUrl.toString();
@@ -258,50 +298,106 @@ class _MyHomePageState extends State<MyHomePage> {
         timelineSummaries.add("$description at ${DateFormat("Hm", "en").format(datetime)}");
       }
       _timelineDescriptionControllers = timelineDescriptionControllers;
-      _timelineTimes = _timelineTimes;
+      _timelineTimes = timelineTimes;
       _timelineSummaries = timelineSummaries;
     });
   }
 
-  Future<void> _createEvent() async {
+  String _createPayload() {
+    final payload = {
+      "name": _nameController.text,
+      "description": _descriptionController.text,
+      "category": _selectedCategories.map((category) => category).toList(),
+      "genre": _genreFormControllers.map((controller) => controller.text).toList(),
+      "startDateTime": "${_getStartDateTime().toIso8601String()}Z",
+      "endDateTime": "${_getEndDateTime().toIso8601String()}Z",
+      "venue": _venueController.text,
+      "city": _selectedCity,
+      "country": "UK",
+      "postcode": _postcodeController.text,
+      "address": _addressController.text,
+      "latitude": _latitudeController.text,
+      "longitude": _longitudeController.text,
+      "bannerUrl": _bannerUrlController.text,
+      "hostName": _hostController.text,
+      "lineup": _lineupFormControllers.map((controller) => controller.text).toList(),
+      "timeline": _getAllTimeline(),
+      "ticketPrice": _ticketPriceController.text,
+      "ticketsUrl": _ticketUrlController.text
+    };
+
+    return jsonEncode(payload);
+  }
+
+  void _runCreateOperation({required String payload, required String errorMessage}) async {
+    final createdEventId = await HttpFunctions.createEventDraft(payload: payload);
+    if (mounted) {
+      Navigator.of(context, rootNavigator: true).pop();
+    }
+    if (createdEventId != null) {
+      setState(() {
+        _eventIdController.text = createdEventId;
+      });
+      _onCreateEventDraft(createdEventId);
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(errorMessage)));
+      }
+    }
+  }
+
+  void _runUpdateOperation({required String id, required String payload, required String errorMessage}) async {
+    final hasBeenUpdated = await HttpFunctions.updateEvent(id: id, payload: payload);
+    if (mounted) {
+      Navigator.of(context, rootNavigator: true).pop();
+    }
+    if (hasBeenUpdated) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("${_nameController.text} has been updated")));
+      }
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(errorMessage)));
+      }
+    }
+  }
+
+  bool newDateIsAfterOldDate() {
+    DateTime oldStartDatetime = _event!.startDateTime;
+    DateTime newStartDatetime = _getStartDateTime();
+    return newStartDatetime.isAfter(oldStartDatetime);
+  }
+
+  Future<void> _submit({required String progressMessage, required String errorMessage, required EventOperationType type}) async {
     final currentState = _formKey.currentState;
     if (currentState != null) {
       if (currentState.validate()) {
         if (_isDateValid()) {
-          final payload = {
-            "name": _nameController.text,
-            "description": _descriptionController.text,
-            "category": _selectedCategories.map((category) => category).toList(),
-            "genre": _genreFormControllers.map((controller) => controller.text).toList(),
-            "startDateTime": "${_getStartDateTime().toIso8601String()}Z",
-            "endDateTime": "${_getEndDateTime().toIso8601String()}Z",
-            "venue": _venueController.text,
-            "city": _selectedCity,
-            "country": "UK",
-            "postcode": _postcodeController.text,
-            "address": _addressController.text,
-            "latitude": _latitudeController.text,
-            "longitude": _longitudeController.text,
-            "bannerUrl": _bannerUrlController.text,
-            "hostName": _hostController.text,
-            "lineup": _lineupFormControllers.map((controller) => controller.text).toList(),
-            "timeline": _getAllTimeline(),
-            "ticketPrice": _ticketPriceController.text,
-            "ticketsUrl": _ticketUrlController.text
-          };
+          final payload = _createPayload();
 
-          final jsonPayload = jsonEncode(payload);
+          _showProgressDialog(message: progressMessage);
 
           try {
-            final createdEventId = await HttpFunctions.createEventDraft(payload: jsonPayload);
-            if (createdEventId != null) {
-              _onCreateEventDraft(createdEventId);
-            } else {
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Unable to create draft event")));
+            if (_eventIdController.text.isNotEmpty) {
+              switch (type) {
+                case EventOperationType.create:
+                  if (newDateIsAfterOldDate()) {
+                    _runCreateOperation(payload: payload, errorMessage: errorMessage);
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("New start date must be before end old start date")));
+                  }
+                  break;
+                case EventOperationType.update:
+                  _runUpdateOperation(id: _eventIdController.text, payload: payload, errorMessage: errorMessage);
+                  break;
+                default:
+                  throw Exception("Invalid EventOperationType");
               }
+            } else {
+              _runCreateOperation(payload: payload, errorMessage: errorMessage);
             }
           } catch (e) {
+            Navigator.of(context, rootNavigator: true).pop();
             ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Something went wrong on our end... We are fixing it")));
           }
         } else {
@@ -315,16 +411,25 @@ class _MyHomePageState extends State<MyHomePage> {
     setState(() {
       _eventId = eventId;
     });
-    _showGoLiveBanner(message: "Event is draft, do you want to go live now");
+    _showGoLiveBanner();
   }
 
   Future<void> _postLiveEvent() async {
+
     final payload = {
       "status": "LIVE",
     };
     final jsonPayload = jsonEncode(payload);
+
+    _showProgressDialog(message: "Going live with event");
+
     try {
-      final isLive = await HttpFunctions.updateEvent(path: _eventId, payload: jsonPayload);
+      final isLive = await HttpFunctions.updateEvent(id: _eventIdController.text, payload: jsonPayload);
+
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+      }
+
       if (isLive) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Event is now live on Dancepass")));
@@ -336,6 +441,7 @@ class _MyHomePageState extends State<MyHomePage> {
         }
       }
     } catch (e) {
+      Navigator.of(context, rootNavigator: true).pop();
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Something went wrong on our end... We are fixing it")));
     }
   }
@@ -485,7 +591,7 @@ class _MyHomePageState extends State<MyHomePage> {
   String? _validateUrl({required String url, required String label}) {
     final isValid = Uri.tryParse(_ticketUrlController.text)?.hasScheme == true;
     if (!isValid) {
-      return "$label url is invalid";
+      return "$label is invalid";
     }
     return null;
   }
@@ -511,11 +617,11 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
-  void _showGoLiveBanner({required String message}) {
+  void _showGoLiveBanner() {
     ScaffoldMessenger.of(context).showMaterialBanner(
       MaterialBanner(
         padding: const EdgeInsets.all(10),
-        content: Text(message, style: const TextStyle(color: Colors.white)),
+        content: const Text("Event is in draft, do you want to go live now", style: TextStyle(color: Colors.white)),
         backgroundColor: Colors.black,
         actions: <Widget>[
           TextButton(
@@ -566,6 +672,47 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
+  void _showEventOperationMenu() async {
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (BuildContext context) {
+        return Container(
+            padding: const EdgeInsets.only(top: 12, right: 8, bottom: 20, left: 8),
+            height: 150,
+            child: ListView(
+              children: [
+                ListTile(
+                  onTap: () => _submit(progressMessage: 'Updating ${_nameController.text}', errorMessage: 'Unable to update ${_nameController.text}', type: EventOperationType.update),
+                  leading: const Icon(Icons.edit),
+                  title: Text(
+                    'Update "${_nameController.text}"',
+                    style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: Text(
+                    "${_nameController.text} will be updated with provided fields",
+                    style: const TextStyle(color: Colors.grey),
+                  ),
+                  trailing: const Icon(Icons.arrow_forward_ios_rounded),
+                ),
+                ListTile(
+                  onTap: () => _submit(
+                      progressMessage: 'Creating new event draft from "${_nameController.text}"',
+                      errorMessage: 'Unable to create new event draft from "${_nameController.text}"',
+                      type: EventOperationType.create),
+                  leading: const Icon(Icons.add_circle_outline_outlined),
+                  title: Text(
+                    'Create new event from "${_nameController.text}"',
+                    style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: Text("A new event will be created using fields from ${_nameController.text}", style: const TextStyle(color: Colors.grey)),
+                  trailing: const Icon(Icons.arrow_forward_ios_rounded),
+                ),
+              ],
+            ));
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // This method is rerun every time setState is called, for instance as done
@@ -603,7 +750,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                 child: CTextFormField(
                                   controller: _eventIdController,
                                   shouldValidate: false,
-                                  type: TextInputType.name,
+                                  type: TextInputType.text,
                                   label: 'Event Id',
                                 ),
                               ),
@@ -820,7 +967,11 @@ class _MyHomePageState extends State<MyHomePage> {
                               child: CTextFormField(
                                 controller: _latitudeController,
                                 type: TextInputType.number,
-                                prefixIcon: const Icon(Icons.location_on, color: Colors.grey, size: 16,),
+                                prefixIcon: const Icon(
+                                  Icons.location_on,
+                                  color: Colors.grey,
+                                  size: 16,
+                                ),
                                 label: 'Latitude',
                               ),
                             ),
@@ -831,7 +982,11 @@ class _MyHomePageState extends State<MyHomePage> {
                               child: CTextFormField(
                                 controller: _longitudeController,
                                 type: TextInputType.number,
-                                prefixIcon: const Icon(Icons.location_on, color: Colors.grey, size: 16,),
+                                prefixIcon: const Icon(
+                                  Icons.location_on,
+                                  color: Colors.grey,
+                                  size: 16,
+                                ),
                                 label: 'Longitude',
                               ),
                             ),
@@ -850,7 +1005,11 @@ class _MyHomePageState extends State<MyHomePage> {
                               controller: _bannerUrlController,
                               type: TextInputType.url,
                               label: 'Banner Url',
-                              prefixIcon: const Icon(Icons.link, color: Colors.grey, size: 16,),
+                              prefixIcon: const Icon(
+                                Icons.link,
+                                color: Colors.grey,
+                                size: 16,
+                              ),
                               onChanged: (value) {
                                 setState(() {
                                   _selectedBannerUrl = _bannerUrlController.text;
@@ -861,13 +1020,16 @@ class _MyHomePageState extends State<MyHomePage> {
                         const SizedBox(
                           width: 10,
                         ),
-                        _selectedBannerUrl != null
-                            ? Image.network(
-                                _bannerUrlController.text,
-                                width: 240,
-                                height: 240,
-                              )
-                            : const SizedBox.shrink()
+                        SizedBox(
+                          width: 240,
+                          height: 240,
+                          child: Image.network(
+                            _selectedBannerUrl ?? "",
+                            width: 240,
+                            height: 240,
+                            fit: BoxFit.fill,
+                          ),
+                        )
                       ],
                     ),
                     const SizedBox(
@@ -885,16 +1047,33 @@ class _MyHomePageState extends State<MyHomePage> {
                       children: [
                         SizedBox(
                           width: 200,
-                          child: CTextFormField(controller: _ticketPriceController, type: TextInputType.number, prefixIcon: const Icon(Icons.attach_money_outlined, color: Colors.grey, size: 16,), label: 'Ticket price', inputFormatters: [
-                            FilteringTextInputFormatter.allow(RegExp("[^a-zA-Z\\-]+")),
-                          ]),
+                          child: CTextFormField(
+                              controller: _ticketPriceController,
+                              type: TextInputType.number,
+                              prefixIcon: const Icon(
+                                Icons.attach_money_outlined,
+                                color: Colors.grey,
+                                size: 16,
+                              ),
+                              label: 'Ticket price',
+                              inputFormatters: [
+                                FilteringTextInputFormatter.allow(RegExp("[^a-zA-Z\\-]+")),
+                              ]),
                         ),
                         const SizedBox(
                           width: 10,
                         ),
                         Expanded(
                             child: CTextFormField(
-                                controller: _ticketUrlController, prefixIcon: const Icon(Icons.link, color: Colors.grey, size: 16,), type: TextInputType.url, label: 'Ticket url', validator: () => _validateUrl(url: _ticketUrlController.text, label: "Ticket url"))),
+                                controller: _ticketUrlController,
+                                prefixIcon: const Icon(
+                                  Icons.link,
+                                  color: Colors.grey,
+                                  size: 16,
+                                ),
+                                type: TextInputType.url,
+                                label: 'Ticket url',
+                                validator: () => _validateUrl(url: _ticketUrlController.text, label: "Ticket url"))),
                       ],
                     ),
                     const SizedBox(
@@ -950,7 +1129,11 @@ class _MyHomePageState extends State<MyHomePage> {
                                         controller: _lineupFormControllers[index],
                                         shouldValidate: false,
                                         type: TextInputType.text,
-                                        prefixIcon: const Icon(Icons.person, color: Colors.grey, size: 16,),
+                                        prefixIcon: const Icon(
+                                          Icons.person,
+                                          color: Colors.grey,
+                                          size: 16,
+                                        ),
                                         label: 'Artist field ${index + 1}',
                                       ),
                                     ),
@@ -1055,9 +1238,11 @@ class _MyHomePageState extends State<MyHomePage> {
                     SizedBox(
                       width: double.infinity,
                       child: TextButton(
-                        onPressed: () => _createEvent(),
+                        onPressed: () => _eventIdController.text.isNotEmpty
+                            ? _showEventOperationMenu()
+                            : _submit(progressMessage: "Creating new event draft", errorMessage: "Unable to create new event draft", type: EventOperationType.create),
                         child: const Text(
-                          'Create Event',
+                          'Submit',
                           style: TextStyle(fontWeight: FontWeight.bold),
                         ),
                       ),

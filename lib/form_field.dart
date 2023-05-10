@@ -26,11 +26,11 @@ class CTextFormField extends StatelessWidget {
       ),
       validator: (value) {
         if(shouldValidate) {
-          if (validator != null) {
-            return validator!();
-          }
           if (value == null || value.isEmpty) {
             return '$label has not been provided';
+          }
+          if (validator != null) {
+            return validator!();
           }
         }
         return null;
