@@ -192,16 +192,10 @@ class _MyHomePageState extends State<MyHomePage> {
       initialTime: _timelineTimes[index],
     );
     if (pickedTime != null) {
-      if(pickedTime.hour >= _selectedStartTime.hour) {
-        setState(() {
-          _timelineTimes[index] = pickedTime;
-          _setTimelineSummary(index, _timelineDescriptionControllers[index].text, _timelineTimes[index]);
-        });
-      } else {
-        if(mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Timeline can't start before event start date")));
-        }
-      }
+      setState(() {
+        _timelineTimes[index] = pickedTime;
+        _setTimelineSummary(index, _timelineDescriptionControllers[index].text, _timelineTimes[index]);
+      });
     }
   }
 
@@ -597,7 +591,6 @@ class _MyHomePageState extends State<MyHomePage> {
     final postcode = _postcodeController.text;
 
     if (streetAddress.isNotEmpty && postcode.isNotEmpty) {
-
       final firstLine = [streetAddress, _selectedCity].join(", ");
 
       final address = '$firstLine $postcode';
@@ -717,7 +710,6 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
-
     final selectedBannerUrl = _selectedBannerUrl;
 
     return Scaffold(
@@ -1247,7 +1239,6 @@ class _MyHomePageState extends State<MyHomePage> {
                                           color: Colors.grey,
                                           size: 16,
                                         ),
-                                        shouldValidate: false,
                                         onChanged: (_) {
                                           _setTimelineSummary(index, _timelineDescriptionControllers[index].text, _timelineTimes[index]);
                                         },
