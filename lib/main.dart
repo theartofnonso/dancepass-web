@@ -566,7 +566,7 @@ class _MyHomePageState extends State<MyHomePage> {
               selected: _selectedCategories.contains(category),
               onSelected: (bool selected) {
                 setState(() {
-                  if (_selectedCategories.contains(category)) {
+                  if (_selectedCategories.contains(category) && _selectedCategories.length > 1) {
                     _selectedCategories.remove(category);
                   } else {
                     _selectedCategories.add(category);
@@ -711,7 +711,7 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget _buildImage({required String? url}) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(5),
-      child: Image.network(url ?? "", fit: BoxFit., loadingBuilder: (BuildContext context, Widget child, ImageChunkEvent? loadingProgress) {
+      child: Image.network(url ?? "", fit: BoxFit.contain, loadingBuilder: (BuildContext context, Widget child, ImageChunkEvent? loadingProgress) {
         if (loadingProgress == null) {
           // Image finished loading
           return child;
