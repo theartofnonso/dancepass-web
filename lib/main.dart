@@ -326,7 +326,7 @@ class _MyHomePageState extends State<MyHomePage> {
       "longitude": _longitudeController.text,
       "bannerUrl": _bannerUrlController.text,
       "hostName": _hostController.text,
-      "lineup": _lineupFormControllers.map((controller) => controller.text).toList(),
+      "lineup": _lineupFormControllers.where((controller) => controller.text.isNotEmpty).map((controller) => controller.text).toList(),
       "timeline": _getAllTimeline(),
       "ticketPrice": _ticketPriceController.text,
       "ticketsUrl": _ticketUrlController.text
