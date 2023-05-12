@@ -708,9 +708,27 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
+  Widget _buildImage({required String? url}) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(5),
+      child: Image.network(url ?? "", fit: BoxFit., loadingBuilder: (BuildContext context, Widget child, ImageChunkEvent? loadingProgress) {
+        if (loadingProgress == null) {
+          // Image finished loading
+          return child;
+        }
+        return Container(
+          color: Colors.grey.shade300,
+        );
+      }, errorBuilder: (BuildContext context, Object child, stackTrace) {
+        return Container(
+          color: Colors.grey.shade300,
+        );
+      }),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final selectedBannerUrl = _selectedBannerUrl;
 
     return Scaffold(
         backgroundColor: Colors.grey.shade50,
@@ -1041,22 +1059,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         const SizedBox(
                           width: 10,
                         ),
-                        SizedBox(
-                          width: 240,
-                          height: 240,
-                          child: selectedBannerUrl != null
-                              ? Image.network(
-                                  selectedBannerUrl,
-                                  width: 240,
-                                  height: 240,
-                                  fit: BoxFit.fill,
-                                )
-                              : Container(
-                                  width: 240,
-                                  height: 240,
-                                  color: Colors.grey.shade400,
-                                ),
-                        )
+                        SizedBox(width: 240, height: 240, child: _buildImage(url: _selectedBannerUrl))
                       ],
                     ),
                     const SizedBox(
